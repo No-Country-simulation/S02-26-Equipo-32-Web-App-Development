@@ -1,6 +1,10 @@
 
+using Application.Interface.Repository;
 using Infraestruture.Persistence.Context;
+using Infraestruture.Repository;
 using Microsoft.EntityFrameworkCore;
+using Infraestruture.Extensions;
+using Application.Extensions;
 
 namespace Api
 {
@@ -9,15 +13,11 @@ namespace Api
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            // 1. Obtener la cadena de conexión del appsettings.json
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-            // 2. Registrar el DbContext en el contenedor de dependencias
-            builder.Services.AddDbContext<JustinaDbContext>(options =>
-                options.UseSqlServer(connectionString));
-
-            // Add services to the container.
-
+           
+            // Inyectamos lo de cada capa
+            builder.Services.AddInfrastructureServices(builder.Configuration); // Viene de Infrastructure
+            builder.Services.AddApplicationLayer();
+           
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
