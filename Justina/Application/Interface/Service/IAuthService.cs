@@ -10,5 +10,6 @@ namespace Application.Interface.Service
     public interface IAuthService
     {
         Task<int> RegisterAsync(RegisterUserDto dto);
+        Task<string> LoginAsync(LoginUserDto dto);
     }
 }
