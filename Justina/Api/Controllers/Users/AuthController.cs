@@ -22,11 +22,26 @@ namespace Api.Controllers.Users
             try
             {
                 int userId = await _authService.RegisterAsync(dto);
-                return Ok(new {Message = "Usuario registrado con éxito", UserId = userId });
+                return Ok(new { Message = "Usuario registrado con éxito", UserId = userId });
             }
             catch (Exception ex)
             {
                 return BadRequest(new { Error = ex.Message });
+            }
+        }
+
+        // POST: api/Auth/login
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginUserDto dto)
+        {
+            try
+            {
+                string token = await _authService.LoginAsync(dto);
+                return Ok(token);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
     }
