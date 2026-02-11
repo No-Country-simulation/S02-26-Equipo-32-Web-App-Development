@@ -1,0 +1,95 @@
+/* Light theme – surgical training simulator */
+:root {
+  --bg: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-game: #e2e8f0;
+  --accent: #38bdf8;
+  --accent-dim: #0ea5e9;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --success: #0ea5e9;
+  --border: rgba(56, 189, 248, 0.35);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+#root { min-height: 100vh; }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button {
+  cursor: pointer;
+  font: inherit;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: #fff;
+}
+button:hover { background: var(--accent-dim); }
+button.secondary { background: var(--bg-card); color: var(--text); border: 1px solid var(--accent); }
+
+.game-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.metrics {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.metric { background: var(--bg-card); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border); }
+
+.canvas-wrap {
+  background: var(--bg-game);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--border);
+}
+
+.canvas-wrap.error-flash,
+.error-flash {
+  box-shadow: 0 0 0 4px var(--danger);
+  animation: error-pulse 0.5s ease-out;
+}
+
+@keyframes error-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--danger); }
+  50% { box-shadow: 0 0 0 8px var(--danger); opacity: 0.95; }
+}
+
+.full-canvas { width: 100%; height: 100%; display: block; }
+
+.error-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--danger);
+  color: white;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  z-index: 10;
+  animation: error-badge-in 0.2s ease-out;
+}
+
+@keyframes error-badge-in {
+  from { opacity: 0; transform: translateX(-50%) scale(0.9); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
