@@ -5,6 +5,7 @@ using Infraestruture.Repository;
 using Microsoft.EntityFrameworkCore;
 using Infraestruture.Extensions;
 using Application.Extensions;
+using Api.Extensions;
 
 namespace Api
 {
@@ -17,7 +18,8 @@ namespace Api
             // Inyectamos lo de cada capa
             builder.Services.AddInfrastructureServices(builder.Configuration); // Viene de Infrastructure
             builder.Services.AddApplicationLayer();
-           
+
+            builder.Services.AddSwaggerConfiguration();
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -33,6 +35,8 @@ namespace Api
             }
 
             app.UseHttpsRedirection();
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 
