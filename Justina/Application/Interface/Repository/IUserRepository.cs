@@ -1,4 +1,5 @@
-﻿using Domain.Models;
+﻿using Application.Dtos.Users;
+using Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,5 +12,6 @@ namespace Application.Interface.Repository
     {
         Task<User?> GetByEmailAsync(string email); //devuelve usuario o nulo.
         Task AddAsync(User user);
+        Task UpdateAsync(User user);
     }
 }
