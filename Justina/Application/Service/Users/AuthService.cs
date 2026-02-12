@@ -87,5 +87,26 @@ namespace Application.Service.Users
 
             return tokenHandler.WriteToken(token);
         }
+
+        public async Task ChangePasswordAsync(ChangePasswordDto dto, string email)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null)
+                throw new Exception("Usuario no encontrado");
+            
+            bool currentPasswordValid = BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash);
+            if (!currentPasswordValid)
+                throw new Exception("Contraseña actual incorrecta");
+            
+            if (dto.NewPassword != dto.ConfirmNewPassword)
+                throw new Exception("La nueva contraseña y la confirmación no coinciden");
+            if(dto.NewPassword.Length < 6)
+                throw new Exception("La nueva contraseña debe tener al menos 6 caracteres");
+
+            string newPasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+
+            user.PasswordHash = newPasswordHash;
+            await _userRepository.UpdateAsync(user);
+        }
     }
 }

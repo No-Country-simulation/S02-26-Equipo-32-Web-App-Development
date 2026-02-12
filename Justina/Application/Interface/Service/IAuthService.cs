@@ -11,6 +11,6 @@ namespace Application.Interface.Service
     {
         Task<int> RegisterAsync(RegisterUserDto dto);
         Task<string> LoginAsync(LoginUserDto dto);
-        Task ChangePasswordAsync(ChangePasswordDto dto);
+        Task ChangePasswordAsync(ChangePasswordDto dto, string email);
     }
 }
