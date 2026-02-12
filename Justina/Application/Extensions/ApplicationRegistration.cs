@@ -2,6 +2,7 @@
 using Application.Interface.Service;
 
 using Application.Service.Attempts;
+using Application.Service.Users;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,7 @@ namespace Application.Extensions
             services.AddAutoMapper(Assembly.GetExecutingAssembly());
 
             // Registro de Servicios de Aplicación
+            services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IAttemptService, AttemptService>();
            
 

@@ -24,6 +24,7 @@ namespace Infraestruture.Extensions
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
             // Registro de Repositorios
+            services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IAttemptRepository, AttemptRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
