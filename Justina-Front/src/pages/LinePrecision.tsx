@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
-import GameFrame from '../components/GameFrame'
+import GameFrame, { useGameSession } from '../components/GameFrame'
 import DifficultySelector from '../components/DifficultySelector'
 import ErrorFlash from '../components/ErrorFlash'
 import GameActions from '../components/GameActions'
@@ -63,7 +63,7 @@ function distToSegment(
   return { dist: Math.hypot(px - qx, py - qy), t }
 }
 
-const CANVAS_BG = '#cbd5e1'
+const CANVAS_BG = '#0f172a'
 /** Radio máximo (px) para considerar que el cursor está "sobre" la ruta y avanzar progreso. */
 const CATCH_RADIUS = 110
 /** Progreso mínimo (0..1) para dar por completada la ruta. */
@@ -74,6 +74,15 @@ const PENCIL_MIN_STEP = 3
 const START_CIRCLE_R = 14
 
 export default function LinePrecision() {
+  return (
+    <GameFrame title="Sutura de Vena Renal" gameId="line-precision">
+      <LinePrecisionGame />
+    </GameFrame>
+  )
+}
+
+function LinePrecisionGame() {
+  const { endGame, trackMovement } = useGameSession()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [difficulty, setDifficulty] = useState<Difficulty>('medium')
   const PATH = useMemo(() => buildPath(difficulty), [difficulty])
@@ -88,7 +97,6 @@ export default function LinePrecision() {
   const startTime = useRef(0)
   const pathProgress = useRef(0)
   const deviations = useRef<number[]>([])
-  /** Trazo real del cursor (como lápiz): cada posición por donde pasó el cursor. */
   const pencilTrail = useRef<[number, number][]>([])
   const TOL = getTolerance(difficulty)
 
@@ -116,7 +124,9 @@ export default function LinePrecision() {
   }, [difficulty, resetLevel])
 
   const draw = useCallback((ctx: CanvasRenderingContext2D) => {
-    ctx.fillStyle = CANVAS_BG
+    ctx.clearRect(0, 0, W, H)
+    // Fondo semitransparente para dejar ver la imagen de fondo
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.4)' 
     ctx.fillRect(0, 0, W, H)
 
     // 1) Línea guía a seguir (punteada)
@@ -134,7 +144,7 @@ export default function LinePrecision() {
     // 2) Trazo del cursor como lápiz (camino real que hizo el cursor)
     const trail = pencilTrail.current
     if (trail.length >= 1) {
-      ctx.strokeStyle = 'var(--accent)'
+      ctx.strokeStyle = '#0EA5E9' // var(--accent)
       ctx.lineWidth = 4
       ctx.lineCap = 'round'
       ctx.lineJoin = 'round'
@@ -143,7 +153,7 @@ export default function LinePrecision() {
       for (let i = 1; i < trail.length; i++) ctx.lineTo(trail[i][0], trail[i][1])
       ctx.stroke()
       if (trail.length === 1) {
-        ctx.fillStyle = 'var(--accent)'
+        ctx.fillStyle = '#0EA5E9' // var(--accent)
         ctx.beginPath()
         ctx.arc(trail[0][0], trail[0][1], 5, 0, Math.PI * 2)
         ctx.fill()
@@ -151,26 +161,26 @@ export default function LinePrecision() {
     }
 
     // 3) Punto de inicio (círculo azul — solo inicia si el cursor está dentro)
-    ctx.fillStyle = 'var(--success)'
+    ctx.fillStyle = '#10B981' // var(--success)
     ctx.beginPath()
     ctx.arc(PATH[0][0], PATH[0][1], START_CIRCLE_R, 0, Math.PI * 2)
     ctx.fill()
-    ctx.strokeStyle = 'var(--text)'
+    ctx.strokeStyle = '#0F172A' // var(--text)
     ctx.lineWidth = 2
     ctx.stroke()
 
     // 4) Punto de llegada (círculo celeste)
-    ctx.fillStyle = 'var(--accent)'
+    ctx.fillStyle = '#0EA5E9' // var(--accent)
     ctx.beginPath()
     ctx.arc(PATH[PATH.length - 1][0], PATH[PATH.length - 1][1], 14, 0, Math.PI * 2)
     ctx.fill()
-    ctx.strokeStyle = 'var(--text)'
+    ctx.strokeStyle = '#fff'
     ctx.lineWidth = 2
     ctx.stroke()
 
     // 5) Cursor actual (punto rojo) durante la partida
     if (cursorPos && started && !finished) {
-      ctx.fillStyle = 'var(--danger)'
+      ctx.fillStyle = '#EF4444' // var(--danger)
       ctx.beginPath()
       ctx.arc(cursorPos[0], cursorPos[1], 6, 0, Math.PI * 2)
       ctx.fill()
@@ -200,6 +210,9 @@ export default function LinePrecision() {
     const mx = (e.clientX - rect.left) * scaleX
     const my = (e.clientY - rect.top) * scaleY
     setCursorPos([mx, my])
+    
+    // Send telemetry to GameSession
+    trackMovement(e.clientX, e.clientY)
 
     if (finished) return
 
@@ -215,7 +228,7 @@ export default function LinePrecision() {
       return
     }
 
-    // Registrar posición del cursor como trazo de lápiz (solo si se movió lo suficiente)
+    // Registrar posición del cursor como trazo de lápiz
     const trail = pencilTrail.current
     if (trail.length > 0) {
       const last = trail[trail.length - 1]
@@ -260,13 +273,11 @@ export default function LinePrecision() {
             : 0
         const perf = Math.max(0, 100 - (avgDev / TOL) * 25)
         setPerfection(Math.round(perf))
-        addResult({
-          gameId: 'line-precision',
+        
+        // Use context to end game
+        endGame({
           perfection: perf,
           timeMs: Date.now() - startTime.current,
-          difficulty,
-          routeAdherence: newProgress * 100,
-          at: '',
         })
       }
     }
@@ -277,20 +288,33 @@ export default function LinePrecision() {
   }
 
   return (
-    <GameFrame
-      title="Precisión en línea"
-      metrics={
-        <>
-          <DifficultySelector value={difficulty} onChange={setDifficulty} disabled={started && !finished} />
-          <span className="metric">Tiempo: {(timeMs / 1000).toFixed(2)} s</span>
-          <span className="metric">Progreso: {progress}%</span>
-          {finished && <span className="metric">Perfección: {perfection}%</span>}
-        </>
-      }
-    >
+    <div style={{ padding: '1rem' }}>
+      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <DifficultySelector value={difficulty} onChange={setDifficulty} disabled={started && !finished} />
+        <span className="metric">Tiempo: {(timeMs / 1000).toFixed(2)} s</span>
+        <span className="metric">Progreso: {progress}%</span>
+        {finished && <span className="metric">Perfección: {perfection}%</span>}
+      </div>
+
       <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
         Coloca el cursor <strong>dentro del círculo azul</strong> para empezar (solo inicia cuando está dentro). Al mover el cursor queda registrado el camino como un <strong>trazo de lápiz</strong> (línea sólida). Sigue la línea punteada lo más fielmente posible. Cada nivel tiene una ruta distinta (más curvas = más difícil).
       </p>
+      
+      <ErrorFlash 
+        trigger={errorFlash} 
+        onClear={() => setErrorFlash(false)} 
+        style={{ position: 'relative', width: W, height: H, margin: '0 auto', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}
+      >
+        <canvas
+          ref={canvasRef}
+          width={W}
+          height={H}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          style={{ cursor: 'none', background: CANVAS_BG }}
+        />
+      </ErrorFlash>
+
       <GameActions
         started={started}
         finished={finished}
@@ -300,17 +324,6 @@ export default function LinePrecision() {
         onPlayAgain={resetLevel}
         onNextLevel={goNextLevel}
       />
-      <ErrorFlash trigger={errorFlash} onClear={() => setErrorFlash(false)} className="canvas-wrap" style={{ width: '100%', maxWidth: W, height: H }}>
-        <canvas
-          ref={canvasRef}
-          width={W}
-          height={H}
-          className="full-canvas"
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          style={{ cursor: 'crosshair' }}
-        />
-      </ErrorFlash>
-    </GameFrame>
+    </div>
   )
 }

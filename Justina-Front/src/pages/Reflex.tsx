@@ -1,9 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import GameFrame from '../components/GameFrame'
+import GameFrame, { useGameSession } from '../components/GameFrame'
 import DifficultySelector from '../components/DifficultySelector'
 import ErrorFlash from '../components/ErrorFlash'
-import GameActions from '../components/GameActions'
-import { addResult } from '../store'
 import type { Difficulty } from '../types'
 
 function getN(d: Difficulty): number {
@@ -12,13 +10,11 @@ function getN(d: Difficulty): number {
 
 const W = 600
 const H = 450
-const TARGET_R = 18
-/** Solo nivel difícil: tiempo (ms) que cada punto permanece visible antes de apagarse. */
 const HARD_VISIBLE_MS = 1200
-/** Solo nivel difícil: pausa (ms) entre apagar un punto y mostrar el siguiente. */
 const HARD_GAP_MS = 400
 
-export default function Reflex() {
+function ReflexGame() {
+  const { endGame, trackMovement } = useGameSession()
   const [difficulty, setDifficulty] = useState<Difficulty>('medium')
   const N = getN(difficulty)
   const isBlinkMode = difficulty === 'hard'
@@ -26,11 +22,11 @@ export default function Reflex() {
   const [visibleId, setVisibleId] = useState<number | null>(null)
   const [timeMs, setTimeMs] = useState(0)
   const [reactionTimes, setReactionTimes] = useState<number[]>([])
-  const [phase, setPhase] = useState<'idle' | 'ready' | 'play'>('idle')
-  const [roundCompleted, setRoundCompleted] = useState(false)
+  const [phase, setPhase] = useState<'ready' | 'play'>('ready')
   const [clickCount, setClickCount] = useState(0)
   const [errorFlash, setErrorFlash] = useState(false)
   const [missCount, setMissCount] = useState(0)
+  
   const timerRef = useRef<number>(0)
   const showAtRef = useRef(0)
   const reactionTimesRef = useRef<number[]>([])
@@ -38,6 +34,15 @@ export default function Reflex() {
   const nextShowTimeoutRef = useRef<number>(0)
   const currentIndexRef = useRef(0)
   const missCountRef = useRef(0)
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      clearInterval(timerRef.current)
+      clearTimeout(hideTimeoutRef.current)
+      clearTimeout(nextShowTimeoutRef.current)
+    }
+  }, [])
 
   const spawn = useCallback(() => {
     const list: { x: number; y: number; id: number; clicked?: boolean }[] = []
@@ -84,10 +89,12 @@ export default function Reflex() {
       const avgRt = times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0
       const misses = missCountRef.current
       const perfection = Math.max(0, 100 - (avgRt / 500) * 30 - misses * 5)
-      addResult({ gameId: 'reflex', perfection, timeMs: totalTime, difficulty, extra: { avgReactionMs: avgRt, misses }, at: '' })
-      setPhase('idle')
-      setTimeMs(totalTime)
-      setRoundCompleted(true)
+      
+      endGame({
+        perfection,
+        timeMs: totalTime,
+        score: Math.round(perfection * 10)
+      })
       return
     }
     setVisibleId(idx)
@@ -98,15 +105,7 @@ export default function Reflex() {
       currentIndexRef.current = idx + 1
       nextShowTimeoutRef.current = window.setTimeout(showNextHard, HARD_GAP_MS)
     }, HARD_VISIBLE_MS)
-  }, [N])
-
-  useEffect(() => {
-    return () => {
-      clearInterval(timerRef.current)
-      clearTimeout(hideTimeoutRef.current)
-      clearTimeout(nextShowTimeoutRef.current)
-    }
-  }, [])
+  }, [N, endGame])
 
   const handleClick = (id: number) => {
     if (phase !== 'play') return
@@ -130,10 +129,12 @@ export default function Reflex() {
           const avgRt = times.reduce((a, b) => a + b, 0) / times.length
           const misses = missCountRef.current
           const perfection = Math.max(0, 100 - (avgRt / 500) * 30 - misses * 5)
-          addResult({ gameId: 'reflex', perfection, timeMs: totalTime, difficulty, extra: { avgReactionMs: avgRt, misses }, at: '' })
-          setPhase('idle')
-          setTimeMs(totalTime)
-          setRoundCompleted(true)
+          
+          endGame({
+            perfection,
+            timeMs: totalTime,
+            score: Math.round(perfection * 10)
+          })
         } else {
           nextShowTimeoutRef.current = window.setTimeout(showNextHard, HARD_GAP_MS)
         }
@@ -145,72 +146,61 @@ export default function Reflex() {
         const totalTime = now - showAtRef.current
         const avgRt = times.reduce((a, b) => a + b, 0) / times.length
         const perfection = Math.max(0, 100 - (avgRt / 500) * 30 - missCount * 5)
-        addResult({ gameId: 'reflex', perfection, timeMs: totalTime, difficulty, extra: { avgReactionMs: avgRt, misses: missCount }, at: '' })
-        setPhase('idle')
-        setTimeMs(totalTime)
-        setRoundCompleted(true)
+        
+        endGame({
+          perfection,
+          timeMs: totalTime,
+          score: Math.round(perfection * 10)
+        })
       }
       return next
     })
   }
 
-  const playAgain = () => {
-    setRoundCompleted(false)
-    setPoints([])
-    setPhase('idle')
-  }
-  const goNextLevel = () => {
-    setDifficulty((d) => (d === 'easy' ? 'medium' : d === 'medium' ? 'hard' : d))
-    setRoundCompleted(false)
-    setPoints([])
-    setPhase('idle')
-  }
-
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (phase !== 'play') return
+    // Telemetry tracking handled by onMouseMove, but click is also an event
+    trackMovement(e.clientX, e.clientY)
+
     const target = e.target as HTMLElement
     if (target.getAttribute('data-target') === 'true') return
     setErrorFlash(true)
     setMissCount((m) => m + 1)
   }
+  
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+     if (phase === 'play') {
+       trackMovement(e.clientX, e.clientY)
+     }
+  }
 
   return (
-    <GameFrame
-      title="Reflejos - Flujo sanguíneo"
-      metrics={
-        <>
-          <DifficultySelector value={difficulty} onChange={setDifficulty} disabled={phase === 'play'} />
-          <span className="metric">Tiempo: {(timeMs / 1000).toFixed(2)} s</span>
-          <span className="metric">Puntos: {clickCount} / {N}</span>
-          {missCount > 0 && <span className="metric" style={{ color: 'var(--danger)' }}>Errores: {missCount}</span>}
-          {reactionTimes.length > 0 && (
-            <span className="metric">Reacción media: {(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length).toFixed(0)} ms</span>
-          )}
-        </>
-      }
-    >
-      <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <DifficultySelector value={difficulty} onChange={setDifficulty} disabled={phase === 'play'} />
+        <span className="metric">Tiempo: {(timeMs / 1000).toFixed(2)} s</span>
+        <span className="metric">Puntos: {clickCount} / {N}</span>
+        {missCount > 0 && <span className="metric" style={{ color: 'var(--danger)' }}>Errores: {missCount}</span>}
+      </div>
+
+      <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', textAlign: 'center' }}>
         {isBlinkMode
-          ? 'Nivel difícil: los puntos se encienden y se apagan. Haz clic en cada uno mientras esté encendido para medir reflejos.'
+          ? 'Nivel difícil: los puntos se encienden y se apagan. Haz clic en cada uno mientras esté encendido.'
           : 'Toca solo los puntos rojos. Clic fuera = error crítico.'}
       </p>
-      {phase === 'idle' && !roundCompleted && (
-        <button onClick={() => setPhase('ready')} style={{ marginBottom: '1rem' }}>Preparar</button>
-      )}
+
       {phase === 'ready' && (
-        <button onClick={spawn} style={{ marginBottom: '1rem' }}>Iniciar</button>
+        <button onClick={spawn} className="btn-primary" style={{ marginBottom: '1rem' }}>
+          Comenzar
+        </button>
       )}
-      <GameActions
-        started={phase !== 'idle' || roundCompleted}
-        finished={roundCompleted}
-        difficulty={difficulty}
-        showStartButton={false}
-        onStart={() => setPhase('ready')}
-        onPlayAgain={playAgain}
-        onNextLevel={goNextLevel}
-      />
+
       <ErrorFlash trigger={errorFlash} onClear={() => setErrorFlash(false)} className="canvas-wrap" style={{ width: '100%', maxWidth: W, height: H }}>
-        <div style={{ width: W, height: H, position: 'relative', background: '#cbd5e1' }} onClick={handleCanvasClick}>
+        <div 
+          style={{ width: W, height: H, position: 'relative', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', cursor: 'crosshair' }} 
+          onClick={handleCanvasClick}
+          onMouseMove={handleMouseMove}
+        >
           {points.map((p) => {
             const showInHard = isBlinkMode ? visibleId === p.id : true
             const isClicked = p.clicked
@@ -231,12 +221,21 @@ export default function Reflex() {
                   background: isClicked ? 'var(--success)' : showInHard ? '#dc2626' : 'transparent',
                   border: `2px solid ${showInHard || isClicked ? '#fff' : 'transparent'}`,
                   padding: 0,
+                  cursor: isClicked ? 'default' : 'pointer'
                 }}
               />
             )
           })}
         </div>
       </ErrorFlash>
+    </div>
+  )
+}
+
+export default function Reflex() {
+  return (
+    <GameFrame title="Control de Hemorragia Renal" gameId="reflex">
+      <ReflexGame />
     </GameFrame>
   )
 }

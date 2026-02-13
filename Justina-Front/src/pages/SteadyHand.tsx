@@ -1,14 +1,13 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
-import GameFrame from '../components/GameFrame'
+import GameFrame, { useGameSession } from '../components/GameFrame'
 import DifficultySelector from '../components/DifficultySelector'
 import ErrorFlash from '../components/ErrorFlash'
-import GameActions from '../components/GameActions'
-import { addResult } from '../store'
 import type { Difficulty } from '../types'
 
 const W = 500
 const H = 400
 const CENTER = { x: W / 2, y: H / 2 }
+const CANVAS_BG = 'rgba(15, 23, 42, 0.4)'
 
 function getParams(d: Difficulty) {
   return d === 'easy'
@@ -18,7 +17,6 @@ function getParams(d: Difficulty) {
     : { zoneR: 22, durationMs: 7000, amplitude: 58, speed: 0.0035 }
 }
 
-/** Centro de la zona en un instante; más difícil = más amplitud y velocidad. */
 function getZoneCenter(elapsedMs: number, amplitude: number, speed: number): { x: number; y: number } {
   const t = elapsedMs * speed
   return {
@@ -27,28 +25,31 @@ function getZoneCenter(elapsedMs: number, amplitude: number, speed: number): { x
   }
 }
 
-const CANVAS_BG = '#cbd5e1'
-
-export default function SteadyHand() {
+function SteadyHandGame() {
+  const { endGame, trackMovement } = useGameSession()
   const [difficulty, setDifficulty] = useState<Difficulty>('medium')
   const params = getParams(difficulty)
   const { zoneR: ZONE_R, durationMs: DURATION_MS, amplitude, speed } = params
+  
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [pos, setPos] = useState(CENTER)
   const [zoneCenter, setZoneCenter] = useState(CENTER)
   const [started, setStarted] = useState(false)
-  const [finished, setFinished] = useState(false)
   const [timeHeld, setTimeHeld] = useState(0)
   const [exits, setExits] = useState(0)
-  const [perfection, setPerfection] = useState(0)
   const [errorFlash, setErrorFlash] = useState(false)
+  
   const startRef = useRef(0)
   const insideRef = useRef(true)
   const driftRef = useRef<number[]>([])
+  const intervalRef = useRef<number>()
 
   const draw = useCallback((ctx: CanvasRenderingContext2D) => {
+    ctx.clearRect(0, 0, W, H)
     ctx.fillStyle = CANVAS_BG
     ctx.fillRect(0, 0, W, H)
+    
+    // Draw Zone
     ctx.fillStyle = 'rgba(56, 189, 248, 0.25)'
     ctx.beginPath()
     ctx.arc(zoneCenter.x, zoneCenter.y, ZONE_R, 0, Math.PI * 2)
@@ -56,6 +57,8 @@ export default function SteadyHand() {
     ctx.strokeStyle = 'var(--accent)'
     ctx.lineWidth = 2
     ctx.stroke()
+    
+    // Draw Cursor
     ctx.fillStyle = 'var(--accent)'
     ctx.beginPath()
     ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2)
@@ -71,21 +74,48 @@ export default function SteadyHand() {
   }, [draw])
 
   useEffect(() => {
-    if (!started || finished) return
-    const id = setInterval(() => {
+    if (!started) return
+    
+    intervalRef.current = window.setInterval(() => {
       const elapsed = Date.now() - startRef.current
       setZoneCenter(getZoneCenter(elapsed, amplitude, speed))
+      
       if (elapsed >= DURATION_MS) {
-        setFinished(true)
-        const perf = Math.max(0, 100 - exits * 12 - (driftRef.current.length ? driftRef.current.reduce((a, b) => a + b, 0) / driftRef.current.length / 2 : 0))
-        setPerfection(Math.round(perf))
-        addResult({ gameId: 'steady-hand', perfection: perf, timeMs: DURATION_MS, difficulty, extra: { exits, avgDrift: driftRef.current.length ? driftRef.current.reduce((a, b) => a + b, 0) / driftRef.current.length : 0 }, at: '' })
+        clearInterval(intervalRef.current)
+        setStarted(false)
+        
+        // Calculate Score
+        const avgDrift = driftRef.current.length 
+          ? driftRef.current.reduce((a, b) => a + b, 0) / driftRef.current.length 
+          : 0
+          
+        let perf = 100 - (exits * 12) - (avgDrift / 2)
+        if (perf < 0) perf = 0
+        if (perf > 100) perf = 100
+        
+        endGame({
+          perfection: Math.round(perf),
+          timeMs: DURATION_MS,
+          score: Math.round(perf * 10)
+        })
         return
       }
       setTimeHeld(elapsed)
     }, 50)
-    return () => clearInterval(id)
-  }, [started, finished, exits, DURATION_MS, amplitude, speed])
+    
+    return () => clearInterval(intervalRef.current)
+  }, [started, DURATION_MS, amplitude, speed, endGame, exits]) // Added dependencies
+
+  const start = () => {
+    setStarted(true)
+    setTimeHeld(0)
+    setExits(0)
+    setErrorFlash(false)
+    setZoneCenter(CENTER)
+    driftRef.current = []
+    insideRef.current = true
+    startRef.current = Date.now()
+  }
 
   const onMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
@@ -94,11 +124,19 @@ export default function SteadyHand() {
     const x = (e.clientX - rect.left) * (canvas.width / rect.width)
     const y = (e.clientY - rect.top) * (canvas.height / rect.height)
     setPos({ x, y })
-    if (!started || finished) return
+    
+    // Telemetry
+    if (started) {
+       trackMovement(e.clientX, e.clientY)
+    }
+
+    if (!started) return
+    
     const elapsed = Date.now() - startRef.current
     const center = getZoneCenter(elapsed, amplitude, speed)
     const d = Math.hypot(x - center.x, y - center.y)
     driftRef.current.push(d)
+    
     if (d > ZONE_R) {
       if (insideRef.current) {
         insideRef.current = false
@@ -110,51 +148,41 @@ export default function SteadyHand() {
     }
   }
 
-  const start = () => {
-    setStarted(true)
-    setFinished(false)
-    setTimeHeld(0)
-    setExits(0)
-    setErrorFlash(false)
-    setZoneCenter(CENTER)
-    driftRef.current = []
-    insideRef.current = true
-    startRef.current = Date.now()
-  }
-  const playAgain = () => {
-    setStarted(false)
-    setFinished(false)
-    setTimeHeld(0)
-    setExits(0)
-    setErrorFlash(false)
-    setZoneCenter(CENTER)
-    driftRef.current = []
-    insideRef.current = true
-  }
-  const goNextLevel = () => {
-    setDifficulty((d) => (d === 'easy' ? 'medium' : d === 'medium' ? 'hard' : d))
-    playAgain()
-  }
-
   return (
-    <GameFrame
-      title="Mano estable"
-      metrics={
-        <>
-          <DifficultySelector value={difficulty} onChange={setDifficulty} disabled={started && !finished} />
-          <span className="metric">Tiempo: {(timeHeld / 1000).toFixed(1)} / {(DURATION_MS / 1000).toFixed(0)} s</span>
-          <span className="metric">Salidas de zona: {exits}</span>
-          {finished && <span className="metric">Perfección: {perfection}%</span>}
-        </>
-      }
-    >
-      <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-        Sigue el círculo con el cursor sin salir. El círculo se mueve; a más dificultad, más movimiento. Cada salida = error crítico.
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <DifficultySelector value={difficulty} onChange={setDifficulty} disabled={started} />
+        <span className="metric">Tiempo: {(timeHeld / 1000).toFixed(1)} / {(DURATION_MS / 1000).toFixed(0)} s</span>
+        <span className="metric">Salidas: {exits}</span>
+      </div>
+
+      <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', textAlign: 'center' }}>
+        Sigue el círculo con el cursor sin salir. El círculo se mueve.
       </p>
-      <GameActions started={started} finished={finished} difficulty={difficulty} onStart={start} onPlayAgain={playAgain} onNextLevel={goNextLevel} />
+
+      {!started && (
+        <button onClick={start} className="btn-primary" style={{ marginBottom: '1rem' }}>
+          Comenzar
+        </button>
+      )}
+
       <ErrorFlash trigger={errorFlash} onClear={() => setErrorFlash(false)} className="canvas-wrap" style={{ width: '100%', maxWidth: W, height: H }}>
-        <canvas ref={canvasRef} width={W} height={H} onMouseMove={onMouseMove} style={{ cursor: 'none' }} />
+        <canvas 
+          ref={canvasRef} 
+          width={W} 
+          height={H} 
+          onMouseMove={onMouseMove} 
+          style={{ cursor: 'none', borderRadius: '8px' }} 
+        />
       </ErrorFlash>
+    </div>
+  )
+}
+
+export default function SteadyHand() {
+  return (
+    <GameFrame title="Disección de Arteria Renal" gameId="steady-hand">
+      <SteadyHandGame />
     </GameFrame>
   )
 }

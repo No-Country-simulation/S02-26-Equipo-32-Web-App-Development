@@ -2,52 +2,72 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
-import GameFrame from '../components/GameFrame'
+import GameFrame, { useGameSession } from '../components/GameFrame'
 import DifficultySelector from '../components/DifficultySelector'
 import ErrorFlash from '../components/ErrorFlash'
-import GameActions from '../components/GameActions'
-import { addResult } from '../store'
 import type { Difficulty } from '../types'
 
 function getParams(d: Difficulty) {
   return d === 'easy' ? { count: 5, radius: 0.45 } : d === 'medium' ? { count: 8, radius: 0.4 } : { count: 12, radius: 0.32 }
 }
 
-/** Caja 6×4×4 centrada en origen: x ∈ [-3,3], y ∈ [-2,2], z ∈ [-2,2]. */
-const BOX_HALF = { x: 3, y: 2, z: 2 }
+const KIDNEY_CURVE = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(0, -2.2, 0),
+  new THREE.Vector3(1.2, -1.0, 0),
+  new THREE.Vector3(1.0, 1.0, 0),
+  new THREE.Vector3(0, 2.2, 0),
+  new THREE.Vector3(-0.5, 1.0, 0),
+  new THREE.Vector3(-0.5, -1.0, 0)
+], true)
 
-/**
- * Genera posiciones de tumores pegados a la superficie de la estructura (caja).
- * El centro de cada tumor queda justo fuera de la caja (radio + mínimo margen) para que no floten.
- */
-function generateTumorPositionsOutsideStructure(count: number, radius: number): [number, number, number][] {
-  const gap = 0.05
-  const outX = BOX_HALF.x + radius + gap
-  const outY = BOX_HALF.y + radius + gap
-  const outZ = BOX_HALF.z + radius + gap
-  const faces: Array<() => [number, number, number]> = [
-    () => [outX, (Math.random() - 0.5) * (BOX_HALF.y * 1.6), (Math.random() - 0.5) * (BOX_HALF.z * 1.6)],
-    () => [-outX, (Math.random() - 0.5) * (BOX_HALF.y * 1.6), (Math.random() - 0.5) * (BOX_HALF.z * 1.6)],
-    () => [(Math.random() - 0.5) * (BOX_HALF.x * 1.6), outY, (Math.random() - 0.5) * (BOX_HALF.z * 1.6)],
-    () => [(Math.random() - 0.5) * (BOX_HALF.x * 1.6), -outY, (Math.random() - 0.5) * (BOX_HALF.z * 1.6)],
-    () => [(Math.random() - 0.5) * (BOX_HALF.x * 1.6), (Math.random() - 0.5) * (BOX_HALF.y * 1.6), outZ],
-    () => [(Math.random() - 0.5) * (BOX_HALF.x * 1.6), (Math.random() - 0.5) * (BOX_HALF.y * 1.6), -outZ],
-  ]
-  return Array.from({ length: count }, () => faces[Math.floor(Math.random() * faces.length)]())
+function generateTumorPositionsOnKidney(count: number, tumorRadius: number): [number, number, number][] {
+  const positions: [number, number, number][] = []
+  const tubeRadius = 1.2
+
+  for (let i = 0; i < count; i++) {
+    const t = Math.random()
+    const pointOnCurve = KIDNEY_CURVE.getPointAt(t)
+    const tangent = KIDNEY_CURVE.getTangentAt(t)
+    
+    let up = new THREE.Vector3(0, 1, 0)
+    if (Math.abs(tangent.y) > 0.9) up = new THREE.Vector3(1, 0, 0)
+    
+    const normal = new THREE.Vector3().crossVectors(tangent, up).normalize()
+    const binormal = new THREE.Vector3().crossVectors(tangent, normal).normalize()
+    
+    const angle = Math.random() * Math.PI * 2
+    
+    const surfaceNormal = new THREE.Vector3()
+      .addScaledVector(normal, Math.cos(angle))
+      .addScaledVector(binormal, Math.sin(angle))
+      .normalize()
+      
+    const pos = new THREE.Vector3().copy(pointOnCurve)
+      .addScaledVector(surfaceNormal, tubeRadius + tumorRadius * 0.8)
+
+    positions.push([pos.x, pos.y, pos.z])
+  }
+  return positions
 }
 
 type Mode = 'camera' | 'laser'
 
 function Structure({ innerRef }: { innerRef: React.RefObject<THREE.Mesh | null> }) {
+  const geometry = useMemo(() => new THREE.TubeGeometry(KIDNEY_CURVE, 64, 1.2, 32, true), [])
+  
   return (
     <mesh
       ref={(el) => {
         (innerRef as React.MutableRefObject<THREE.Mesh | null>).current = el
         if (el) el.userData.isStructure = true
       }}
+      geometry={geometry}
     >
-      <boxGeometry args={[6, 4, 4]} />
-      <meshStandardMaterial color="#94a3b8" wireframe />
+      <meshStandardMaterial 
+        color="#7f1d1d"
+        roughness={0.4}
+        metalness={0.1}
+      />
     </mesh>
   )
 }
@@ -117,26 +137,24 @@ function LaserRaycaster({
   return null
 }
 
-export default function TumorAblation() {
+function TumorAblationGame() {
+  const { endGame, trackMovement } = useGameSession()
   const [difficulty, setDifficulty] = useState<Difficulty>('medium')
   const { count: COUNT, radius: RADIUS } = getParams(difficulty)
   const [mode, setMode] = useState<Mode>('camera')
   const [started, setStarted] = useState(false)
   const [timeMs, setTimeMs] = useState(0)
   const [hitCount, setHitCount] = useState(0)
-  const [gameComplete, setGameComplete] = useState(false)
   const [errorFlash, setErrorFlash] = useState(false)
   const [structureErrors, setStructureErrors] = useState(0)
+  
   const startRef = useRef(0)
   const intervalRef = useRef<number>(0)
   const structureRef = useRef<THREE.Mesh | null>(null)
   const tumorRefs = useRef<(THREE.Mesh | null)[]>([])
   const structureErrorsRef = useRef(0)
 
-  const positions = useMemo(
-    () => generateTumorPositionsOutsideStructure(COUNT, RADIUS),
-    [COUNT, RADIUS]
-  )
+  const [positions, setPositions] = useState<[number, number, number][]>([])
   const [hit, setHit] = useState<Set<number>>(new Set())
 
   useEffect(() => {
@@ -145,22 +163,34 @@ export default function TumorAblation() {
 
   const handleBurn = useCallback(
     (i: number) => {
-      setHit((h) => new Set(h).add(i))
-      setHitCount((n) => {
-        const next = n + 1
-        if (next >= COUNT) {
+      setHit((h) => {
+        const newSet = new Set(h)
+        if (newSet.has(i)) return newSet
+        newSet.add(i)
+        
+        // Check completion immediately
+        if (newSet.size >= COUNT) {
           clearInterval(intervalRef.current)
           const t = Date.now() - startRef.current
           setTimeMs(t)
-          setGameComplete(true)
           const errs = structureErrorsRef.current
-          const perf = Math.max(0, 100 - (t / 20000) * 20 - errs * 15)
-          addResult({ gameId: 'tumor-ablation', perfection: perf, timeMs: t, difficulty, extra: { structureErrors: errs }, at: '' })
+          
+          let perf = 100 - (t / 1000) * 1 - errs * 15
+          if (perf < 0) perf = 0
+          if (perf > 100) perf = 100
+          
+          endGame({ 
+             perfection: Math.round(perf), 
+             timeMs: t, 
+             score: Math.round(perf * 10) 
+          })
         }
-        return next
+        
+        setHitCount(newSet.size)
+        return newSet
       })
     },
-    [COUNT]
+    [COUNT, endGame]
   )
 
   const handleStructureHit = useCallback(() => {
@@ -173,8 +203,8 @@ export default function TumorAblation() {
   }, [])
 
   const start = () => {
+    setPositions(generateTumorPositionsOnKidney(COUNT, RADIUS))
     setStarted(true)
-    setGameComplete(false)
     setHitCount(0)
     setHit(new Set())
     setStructureErrors(0)
@@ -184,39 +214,35 @@ export default function TumorAblation() {
     startRef.current = Date.now()
     intervalRef.current = window.setInterval(() => setTimeMs(Date.now() - startRef.current), 100)
   }
-  const playAgain = () => {
-    setStarted(false)
-    setGameComplete(false)
-    setHitCount(0)
-    setHit(new Set())
-    setStructureErrors(0)
-    structureErrorsRef.current = 0
-    setTimeMs(0)
-    setMode('camera')
-  }
-  const goNextLevel = () => {
-    setDifficulty((d) => (d === 'easy' ? 'medium' : d === 'medium' ? 'hard' : d))
-    playAgain()
+
+  // Telemetry
+  const handlePointerMove = (e: React.PointerEvent) => {
+     if (started) {
+       trackMovement(e.clientX, e.clientY)
+     }
   }
 
   return (
-    <GameFrame
-      title="Ablación 3D de tumores"
-      metrics={
-        <>
-          <DifficultySelector value={difficulty} onChange={setDifficulty} disabled={started} />
-          <span className="metric">Tiempo: {(timeMs / 1000).toFixed(2)} s</span>
-          <span className="metric">Tumores: {hitCount} / {COUNT}</span>
-          {structureErrors > 0 && (
-            <span className="metric" style={{ color: 'var(--danger)' }}>Errores estructura: {structureErrors}</span>
-          )}
-        </>
-      }
-    >
-      <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-        <strong>Cámara:</strong> rota la vista. <strong>Láser:</strong> apunta con el cursor sobre los tumores para quemarlos; si tocas la estructura (rejilla) = error crítico.
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <DifficultySelector value={difficulty} onChange={setDifficulty} disabled={started} />
+        <span className="metric">Tiempo: {(timeMs / 1000).toFixed(2)} s</span>
+        <span className="metric">Tumores: {hitCount} / {COUNT}</span>
+        {structureErrors > 0 && (
+          <span className="metric" style={{ color: 'var(--danger)' }}>Errores estructura: {structureErrors}</span>
+        )}
+      </div>
+
+      <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', textAlign: 'center' }}>
+        <strong>Cámara:</strong> rota la vista. <strong>Láser:</strong> apunta con el cursor sobre los tumores para quemarlos; si tocas el riñón = error crítico.
       </p>
-      <GameActions started={started} finished={gameComplete} difficulty={difficulty} onStart={start} onPlayAgain={playAgain} onNextLevel={goNextLevel} />
+
+      {!started && (
+        <button onClick={start} className="btn-primary" style={{ marginBottom: '1rem' }}>
+          Comenzar
+        </button>
+      )}
+
       {started && (
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
           <button
@@ -226,6 +252,9 @@ export default function TumorAblation() {
               background: mode === 'camera' ? 'var(--accent)' : 'var(--bg-card)',
               color: mode === 'camera' ? '#fff' : 'var(--text)',
               border: `1px solid ${mode === 'camera' ? 'var(--accent)' : 'var(--border)'}`,
+              padding: '0.5rem 1rem',
+              borderRadius: '4px',
+              cursor: 'pointer'
             }}
           >
             Cámara (rotar)
@@ -237,14 +266,18 @@ export default function TumorAblation() {
               background: mode === 'laser' ? 'var(--danger)' : 'var(--bg-card)',
               color: mode === 'laser' ? '#fff' : 'var(--text)',
               border: `1px solid ${mode === 'laser' ? 'var(--danger)' : 'var(--border)'}`,
+              padding: '0.5rem 1rem',
+              borderRadius: '4px',
+              cursor: 'pointer'
             }}
           >
             Láser (quemar)
           </button>
         </div>
       )}
+
       <ErrorFlash trigger={errorFlash} onClear={() => setErrorFlash(false)} className="canvas-wrap" style={{ width: '100%', maxWidth: 700, height: 450 }}>
-        <div style={{ width: '100%', maxWidth: 700, height: 450 }}>
+        <div style={{ width: '100%', maxWidth: 700, height: 450 }} onPointerMove={handlePointerMove}>
           <Canvas camera={{ position: [4, 2, 6], fov: 50 }}>
             <ambientLight intensity={0.6} />
             <directionalLight position={[5, 5, 5]} intensity={1} />
@@ -282,6 +315,14 @@ export default function TumorAblation() {
           </Canvas>
         </div>
       </ErrorFlash>
+    </div>
+  )
+}
+
+export default function TumorAblation() {
+  return (
+    <GameFrame title="Ablación de Tumor Renal" gameId="tumor-ablation">
+      <TumorAblationGame />
     </GameFrame>
   )
 }
