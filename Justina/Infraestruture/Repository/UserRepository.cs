@@ -10,30 +10,37 @@ using System.Threading.Tasks;
 
 namespace Infraestruture.Repository
 {
-    public class UserRepository : IUserRepository
+    public class UserRepository : GenericRepository<User>, IUserRepository
     {
-        private readonly JustinaDbContext _context;
-
-        public UserRepository(JustinaDbContext context)
+        public UserRepository(JustinaDbContext context) : base(context)
         {
-            _context = context;
         }
 
         public async Task<User?> GetByEmailAsync(string email)
         {
-            return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            return await _dbSet.FirstOrDefaultAsync(u => u.Email == email);
         }
 
-        public async Task AddAsync(User user)
+        // 👇 AGREGAR - Obtener usuario con roles
+        public async Task<User?> GetByIdWithRolesAsync(int id)
         {
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
+            return await _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == id);
         }
 
-        public async Task UpdateAsync(User user)
+        // 👇 AGREGAR - Obtener usuario por email con roles
+        public async Task<User?> GetByEmailWithRolesAsync(string email)
         {
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+            return await _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Email == email);
         }
+
+        // ❌ ELIMINAR AddAsync - ya viene de GenericRepository
+        // ❌ ELIMINAR UpdateAsync - ya viene de GenericRepository
+        // Estos métodos ya existen en GenericRepository
     }
 }

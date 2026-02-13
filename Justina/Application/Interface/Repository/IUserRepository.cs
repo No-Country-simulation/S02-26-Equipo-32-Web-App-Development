@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 
 namespace Application.Interface.Repository
 {
-    public interface IUserRepository
+    public interface IUserRepository : IGenericRepository<User>
     {
         Task<User?> GetByEmailAsync(string email); //devuelve usuario o nulo.
-        Task AddAsync(User user);
-        Task UpdateAsync(User user);
+        Task<User?> GetByIdWithRolesAsync(int id);  
+        Task<User?> GetByEmailWithRolesAsync(string email); 
     }
 }

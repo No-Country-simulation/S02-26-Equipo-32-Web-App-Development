@@ -2,7 +2,7 @@
 using Application.Interface.Repository;
 using Application.Interface.Result;
 using Application.Interface.Service;
-using Application.Interface.UnitOfWor;
+using Application.Interface.UnitOfWork;
 using Application.Service.Result;
 using AutoMapper;
 using Domain.Models;

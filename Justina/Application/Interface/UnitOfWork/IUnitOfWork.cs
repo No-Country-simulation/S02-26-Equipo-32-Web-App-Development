@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Application.Interface.UnitOfWor
+namespace Application.Interface.UnitOfWork
 {
     public interface IUnitOfWork : IDisposable
     {

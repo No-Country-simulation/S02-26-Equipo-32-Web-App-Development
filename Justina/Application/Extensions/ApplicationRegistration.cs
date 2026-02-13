@@ -2,6 +2,7 @@
 using Application.Interface.Service;
 
 using Application.Service.Attempts;
+using Application.Service.Roles;
 using Application.Service.Users;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -19,12 +20,15 @@ namespace Application.Extensions
         public static IServiceCollection AddApplicationLayer(this IServiceCollection services)
         {
             // Registra AutoMapper buscando los Profiles en este ensamblado
+            services.AddScoped<IRoleService, RoleService>();
             services.AddAutoMapper(Assembly.GetExecutingAssembly());
 
             // Registro de Servicios de Aplicación
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IAttemptService, AttemptService>();
-           
+            
+         
+
 
             return services;
         }

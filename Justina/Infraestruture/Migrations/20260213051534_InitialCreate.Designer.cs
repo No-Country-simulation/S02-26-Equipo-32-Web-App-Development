@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infraestruture.Migrations
 {
     [DbContext(typeof(JustinaDbContext))]
-    [Migration("20260205213849_InitialCreate")]
+    [Migration("20260213051534_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -134,6 +134,10 @@ namespace Infraestruture.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -148,6 +152,9 @@ namespace Infraestruture.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 

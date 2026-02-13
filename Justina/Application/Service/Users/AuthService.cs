@@ -1,28 +1,38 @@
 ﻿using Application.Dtos.Users;
 using Application.Interface.Repository;
 using Application.Interface.Service;
+using Application.Interface.UnitOfWork;        
 using AutoMapper;
 using Domain.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using BCrypt.Net;
 
 namespace Application.Service.Users
 {
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IRoleRepository _roleRepository;    // 👈 AGREGAR
+        private readonly IUnitOfWork _unitOfWork;           // 👈 AGREGAR
         private readonly IConfiguration _configuration;
-        public AuthService(IUserRepository userRepository, IConfiguration configuration)
+        private readonly IMapper _mapper;                   // 👈 AGREGAR (opcional)
+
+        public AuthService(
+            IUserRepository userRepository,
+            IRoleRepository roleRepository,                 // 👈 AGREGAR
+            IUnitOfWork unitOfWork,                        // 👈 AGREGAR
+            IConfiguration configuration,
+            IMapper mapper)                                // 👈 AGREGAR (opcional)
         {
             _userRepository = userRepository;
+            _roleRepository = roleRepository;              // 👈 AGREGAR
+            _unitOfWork = unitOfWork;                     // 👈 AGREGAR
             _configuration = configuration;
+            _mapper = mapper;                             // 👈 AGREGAR (opcional)
         }
 
         public async Task<int> RegisterAsync(RegisterUserDto dto)
@@ -42,11 +52,28 @@ namespace Application.Service.Users
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
                 IsActive = true,
-                EmailConfirmed = true, //para que no moleste en desarrollo. En producción, esto debería ser false y requerir confirmación por email.
-                CreatedBy = "System"
+                EmailConfirmed = true,
+                CreatedBy = "System",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                UserRoles = new List<UserRole>()
             };
 
+            // 👇 ASIGNAR ROL POR DEFECTO "PATIENT"
+            var defaultRole = await _roleRepository.GetByNameAsync("Patient");
+            if (defaultRole != null)
+            {
+                newUser.UserRoles.Add(new UserRole
+                {
+                    User = newUser,
+                    RoleId = defaultRole.Id,
+                    AssignedAt = DateTime.UtcNow,
+                    AssignedBy = "System"
+                });
+            }
+
             await _userRepository.AddAsync(newUser);
+            await _unitOfWork.SaveChangesAsync();           // 👈 AGREGAR
             return newUser.Id;
         }
 
@@ -62,23 +89,22 @@ namespace Application.Service.Users
             if (!passwordValid)
                 throw new Exception("Contraseña incorrecta");
 
-            //Generar el token
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email)
-                //new Claim(ClaimTypes.Role, "User") // Aquí podrías agregar roles si los tienes implementados
             };
 
-            //obtiene la clave secreta del appsettings.json
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("AppSettings:Token").Value));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                _configuration.GetSection("AppSettings:Token").Value ??
+                throw new InvalidOperationException("Token no configurado")));
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.Now.AddDays(1), // El token expirará en 1 día
+                Expires = DateTime.Now.AddDays(1),
                 SigningCredentials = creds
             };
 
@@ -93,20 +119,23 @@ namespace Application.Service.Users
             var user = await _userRepository.GetByEmailAsync(email);
             if (user == null)
                 throw new Exception("Usuario no encontrado");
-            
+
             bool currentPasswordValid = BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash);
             if (!currentPasswordValid)
                 throw new Exception("Contraseña actual incorrecta");
-            
+
             if (dto.NewPassword != dto.ConfirmNewPassword)
                 throw new Exception("La nueva contraseña y la confirmación no coinciden");
-            if(dto.NewPassword.Length < 6)
+
+            if (dto.NewPassword.Length < 6)
                 throw new Exception("La nueva contraseña debe tener al menos 6 caracteres");
 
             string newPasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
 
             user.PasswordHash = newPasswordHash;
-            await _userRepository.UpdateAsync(user);
+
+            _userRepository.Update(user);
+            await _unitOfWork.SaveChangesAsync();           
         }
     }
 }

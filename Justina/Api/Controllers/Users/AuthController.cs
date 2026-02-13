@@ -18,20 +18,29 @@ namespace Api.Controllers.Users
         }
 
         // POST: api/Auth/register
+        // POST: api/Auth/register
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
         {
             try
             {
                 int userId = await _authService.RegisterAsync(dto);
-                return Ok(new { Message = "Usuario registrado con éxito", UserId = userId });
+
+                // ✅ Sin dependency de UsersController
+                return Created(
+                    $"api/Users/{userId}",  // URL manual
+                    new
+                    {
+                        Message = "Usuario registrado con éxito",
+                        UserId = userId
+                    }
+                );
             }
             catch (Exception ex)
             {
                 return BadRequest(new { Error = ex.Message });
             }
         }
-
         // POST: api/Auth/login
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginUserDto dto)

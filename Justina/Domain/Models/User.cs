@@ -15,8 +15,7 @@ namespace Domain.Models
         public string? PhoneNumber { get; set; }
         public bool IsActive { get; set; }
         public bool EmailConfirmed { get; set; }
-        public string CreatedBy { get; set; } = null!;
-        public string? UpdatedBy { get; set; }
+     
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public ICollection<Attempt> Attempts { get; set; } = new List<Attempt>();
     }
