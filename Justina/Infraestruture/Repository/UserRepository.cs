@@ -27,7 +27,6 @@ namespace Infraestruture.Repository
         public async Task AddAsync(User user)
         {
             await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
         }
 
         public async Task UpdateAsync(User user)

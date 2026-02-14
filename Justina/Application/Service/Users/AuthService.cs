@@ -12,16 +12,23 @@ using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using Application.Interface.UnitOfWor;
 
 namespace Application.Service.Users
 {
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IRoleRepository _roleRepository;
+        private readonly IUserRoleRepository _userRoleRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
-        public AuthService(IUserRepository userRepository, IConfiguration configuration)
+        public AuthService(IUserRepository userRepository, IConfiguration configuration, IRoleRepository roleRepository, IUserRoleRepository userRoleRepository, IUnitOfWork unitOfWork)
         {
             _userRepository = userRepository;
+            _roleRepository = roleRepository;
+            _userRoleRepository = userRoleRepository;
+            _unitOfWork = unitOfWork;
             _configuration = configuration;
         }
 
@@ -47,6 +54,21 @@ namespace Application.Service.Users
             };
 
             await _userRepository.AddAsync(newUser);
+
+            var defaultRole = await _roleRepository.GetByNameAsync("Cirujano");
+            if (defaultRole == null)
+                throw new Exception("No se encontró el rol por defecto 'Cirujano'");
+
+            var userRole = new UserRole
+            {
+                User = newUser,
+                Role = defaultRole,
+                AssignedAt = DateTime.UtcNow,
+                AssignedBy = "System"
+            };
+
+            await _userRoleRepository.AddUserRoleAsync(userRole);
+            await _unitOfWork.SaveChangesAsync();
             return newUser.Id;
         }
 
@@ -93,14 +115,14 @@ namespace Application.Service.Users
             var user = await _userRepository.GetByEmailAsync(email);
             if (user == null)
                 throw new Exception("Usuario no encontrado");
-            
+
             bool currentPasswordValid = BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash);
             if (!currentPasswordValid)
                 throw new Exception("Contraseña actual incorrecta");
-            
+
             if (dto.NewPassword != dto.ConfirmNewPassword)
                 throw new Exception("La nueva contraseña y la confirmación no coinciden");
-            if(dto.NewPassword.Length < 6)
+            if (dto.NewPassword.Length < 6)
                 throw new Exception("La nueva contraseña debe tener al menos 6 caracteres");
 
             string newPasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);

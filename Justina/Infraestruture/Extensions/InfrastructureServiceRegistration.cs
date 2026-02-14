@@ -28,6 +28,8 @@ namespace Infraestruture.Extensions
 
             // Registro de Repositorios
             services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IUserRoleRepository, UserRoleRepository>();
             services.AddScoped<IAttemptRepository, AttemptRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<DbSeeder>();
