@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Infraestruture.Persistence.Seeds;
 
 
 namespace Infraestruture.Extensions
@@ -29,6 +30,7 @@ namespace Infraestruture.Extensions
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IAttemptRepository, AttemptRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<DbSeeder>();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
