@@ -89,8 +89,12 @@ namespace Application.Service.Users
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email)
-                //new Claim(ClaimTypes.Role, "User") // Aquí podrías agregar roles si los tienes implementados
             };
+
+            foreach (var userRole in user.UserRoles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+            }
 
             //obtiene la clave secreta del appsettings.json
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("AppSettings:Token").Value));
