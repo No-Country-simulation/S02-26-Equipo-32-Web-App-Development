@@ -1,12 +1,48 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { API_BASE_URL, setCurrentUser } from '../store'
 
 export default function Login() {
   const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // For now, just navigate to dashboard
-    navigate('/')
+    setError(null)
+    setLoading(true)
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (!response.ok) {
+        setError('Credenciales inválidas o error al iniciar sesión.')
+        setLoading(false)
+        return
+      }
+
+      const data = (await response.json()) as { id: number; email?: string }
+      if (!data.id) {
+        setError('Respuesta de login inválida.')
+        setLoading(false)
+        return
+      }
+
+      setCurrentUser({ id: data.id, email: data.email })
+      navigate('/')
+    } catch {
+      setError('No se pudo conectar con el servidor.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -30,19 +66,39 @@ export default function Login() {
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ width: '100%', maxWidth: '400px', padding: '2rem', textAlign: 'center' }}>
           <h1 style={{ marginBottom: '2rem', fontSize: '2rem' }}>Justina</h1>
+
+          {error && (
+            <p style={{ color: 'red', marginBottom: '1rem', fontSize: '0.9rem' }}>
+              {error}
+            </p>
+          )}
           
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
             <div>
-              <label htmlFor="username">Usuario</label>
-              <input type="text" id="username" placeholder="Ingresa tu usuario" />
+              <label htmlFor="email">Correo electrónico</label>
+              <input
+                type="email"
+                id="email"
+                placeholder="Ingresa tu correo"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
             
             <div>
               <label htmlFor="password">Contraseña</label>
-              <input type="password" id="password" placeholder="Ingresa tu contraseña" />
+              <input
+                type="password"
+                id="password"
+                placeholder="Ingresa tu contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
 
-            <button type="submit" style={{ marginTop: '1rem' }}>Iniciar Sesión</button>
+            <button type="submit" style={{ marginTop: '1rem' }} disabled={loading}>
+              {loading ? 'Ingresando...' : 'Iniciar Sesión'}
+            </button>
             
             <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem' }}>
               <a href="#" style={{ color: 'var(--text-muted)' }}>¿Olvidaste tu contraseña?</a>

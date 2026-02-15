@@ -88,6 +88,7 @@ function SteadyHandGame() {
         const avgDrift = driftRef.current.length 
           ? driftRef.current.reduce((a, b) => a + b, 0) / driftRef.current.length 
           : 0
+        const smoothness = Math.max(0, 100 - avgDrift)
           
         let perf = 100 - (exits * 12) - (avgDrift / 2)
         if (perf < 0) perf = 0
@@ -96,7 +97,13 @@ function SteadyHandGame() {
         endGame({
           perfection: Math.round(perf),
           timeMs: DURATION_MS,
-          score: Math.round(perf * 10)
+          score: Math.round(perf * 10),
+          difficulty,
+          extra: {
+            errors: exits,
+            avgDrift,
+            smoothness,
+          },
         })
         return
       }

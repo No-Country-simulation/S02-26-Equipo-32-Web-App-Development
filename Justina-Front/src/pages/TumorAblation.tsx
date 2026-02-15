@@ -182,7 +182,12 @@ function TumorAblationGame() {
           endGame({ 
              perfection: Math.round(perf), 
              timeMs: t, 
-             score: Math.round(perf * 10) 
+             score: Math.round(perf * 10),
+             difficulty,
+             extra: {
+               errors: errs,
+               tumors: COUNT
+             }
           })
         }
         
@@ -276,7 +281,13 @@ function TumorAblationGame() {
         </div>
       )}
 
-      <ErrorFlash trigger={errorFlash} onClear={() => setErrorFlash(false)} className="canvas-wrap" style={{ width: '100%', maxWidth: 700, height: 450 }}>
+      <ErrorFlash
+        trigger={errorFlash}
+        onClear={() => setErrorFlash(false)}
+        message="Contacto no deseado con el riñón: daño tisular."
+        className="canvas-wrap"
+        style={{ width: '100%', maxWidth: 700, height: 450 }}
+      >
         <div style={{ width: '100%', maxWidth: 700, height: 450 }} onPointerMove={handlePointerMove}>
           <Canvas camera={{ position: [4, 2, 6], fov: 50 }}>
             <ambientLight intensity={0.6} />

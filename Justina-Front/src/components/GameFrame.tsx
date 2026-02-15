@@ -1,13 +1,22 @@
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react'
-import { GameId, PatientProfile, Instrument, TelemetryPoint, GameResult } from '../types'
+import { GameId, PatientProfile, Instrument, TelemetryPoint, GameResult, Difficulty } from '../types'
 import { addResult } from '../store'
 import PreOpBriefing from './PreOpBriefing'
 import PostOpReport from './PostOpReport'
 
 // Context Definition
+interface EndGameMetrics {
+  perfection: number
+  timeMs: number
+  score?: number
+  difficulty?: Difficulty
+  routeAdherence?: number
+  extra?: Record<string, number>
+}
+
 interface GameSessionContextType {
   startGame: () => void
-  endGame: (metrics: { perfection: number; timeMs: number; score?: number }) => void
+  endGame: (metrics: EndGameMetrics) => void
   trackMovement: (x: number, y: number) => void
   phase: 'pre' | 'playing' | 'post'
 }
@@ -77,17 +86,19 @@ export default function GameFrame({ title, gameId, children, backgroundImage, ov
     }
   }
 
-  const endGame = (metrics: { perfection: number; timeMs: number; score?: number }) => {
+  const endGame = (metrics: EndGameMetrics) => {
     setFinalMetrics(metrics)
     setPhase('post')
     
-    // Save Result
     const result: GameResult = {
       gameId,
       perfection: metrics.perfection,
       timeMs: metrics.timeMs,
+      difficulty: metrics.difficulty,
+      routeAdherence: metrics.routeAdherence,
+      extra: metrics.extra,
       at: new Date().toISOString(),
-      telemetry: telemetry // Save telemetry to storage
+      telemetry: telemetry
     }
     addResult(result)
   }

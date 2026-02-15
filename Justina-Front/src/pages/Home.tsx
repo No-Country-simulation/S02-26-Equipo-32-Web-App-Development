@@ -120,6 +120,49 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        <div
+          style={{
+            marginBottom: '1.5rem',
+            padding: '1rem 1.25rem',
+            borderRadius: '12px',
+            background: 'rgba(59, 130, 246, 0.08)',
+            border: '1px solid var(--accent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '0.25rem' }}>
+              Modo demo clínico
+            </div>
+            <div style={{ fontSize: '0.95rem', color: 'var(--text)' }}>
+              Usa la simulación de <strong>Ablación de Tumor Renal</strong> como escenario rápido para mostrar el
+              flujo operador–robot Justina a médicos y decisores.
+            </div>
+          </div>
+          <Link
+            to="/tumor-ablation"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 1rem',
+              borderRadius: '999px',
+              background: 'var(--accent)',
+              color: 'white',
+              textDecoration: 'none',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Abrir demo
+            <ChevronRight size={16} />
+          </Link>
+        </div>
         
         {/* Stats Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>

@@ -1,12 +1,52 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { API_BASE_URL } from '../store'
 
 export default function Register() {
   const navigate = useNavigate()
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // For now, just navigate to dashboard
-    navigate('/')
+    setError(null)
+
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName,
+          email,
+          password,
+        }),
+      })
+
+      if (!response.ok) {
+        setError('No se pudo crear la cuenta.')
+        setLoading(false)
+        return
+      }
+
+      navigate('/login')
+    } catch {
+      setError('No se pudo conectar con el servidor.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -30,29 +70,61 @@ export default function Register() {
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}>
           <h1 style={{ marginBottom: '2rem', fontSize: '2rem', textAlign: 'center' }}>Crea tu cuenta</h1>
+
+          {error && (
+            <p style={{ color: 'red', marginBottom: '1rem', fontSize: '0.9rem' }}>
+              {error}
+            </p>
+          )}
           
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
               <label htmlFor="fullname">Nombre completo</label>
-              <input type="text" id="fullname" placeholder="Ingresa tu nombre completo" />
+              <input
+                type="text"
+                id="fullname"
+                placeholder="Ingresa tu nombre completo"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
             </div>
 
             <div>
               <label htmlFor="email">Correo electrónico</label>
-              <input type="email" id="email" placeholder="Ingresa tu correo" />
+              <input
+                type="email"
+                id="email"
+                placeholder="Ingresa tu correo"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
             
             <div>
               <label htmlFor="password">Contraseña</label>
-              <input type="password" id="password" placeholder="Ingresa tu contraseña" />
+              <input
+                type="password"
+                id="password"
+                placeholder="Ingresa tu contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
 
             <div>
               <label htmlFor="confirm-password">Confirmar contraseña</label>
-              <input type="password" id="confirm-password" placeholder="Confirma tu contraseña" />
+              <input
+                type="password"
+                id="confirm-password"
+                placeholder="Confirma tu contraseña"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
             </div>
 
-            <button type="submit" style={{ marginTop: '1rem' }}>Registrarse</button>
+            <button type="submit" style={{ marginTop: '1rem' }} disabled={loading}>
+              {loading ? 'Registrando...' : 'Registrarse'}
+            </button>
             
             <div style={{ textAlign: 'center', fontSize: '0.9rem' }}>
               <Link to="/login" style={{ color: 'var(--text-muted)' }}>¿Ya tienes una cuenta?</Link>

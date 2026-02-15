@@ -87,7 +87,12 @@ function SutureGame() {
       endGame({
         perfection: Math.round(perf),
         timeMs: t,
-        score: Math.round(perf * 10)
+        score: Math.round(perf * 10),
+        difficulty,
+        extra: {
+          errors: mistakes,
+          targets: TARGETS.length,
+        },
       })
     }
   }

@@ -93,7 +93,12 @@ function ReflexGame() {
       endGame({
         perfection,
         timeMs: totalTime,
-        score: Math.round(perfection * 10)
+        score: Math.round(perfection * 10),
+        difficulty,
+        extra: {
+          avgReactionTimeMs: avgRt,
+          errors: misses,
+        },
       })
       return
     }
@@ -133,7 +138,12 @@ function ReflexGame() {
           endGame({
             perfection,
             timeMs: totalTime,
-            score: Math.round(perfection * 10)
+            score: Math.round(perfection * 10),
+            difficulty,
+            extra: {
+              avgReactionTimeMs: avgRt,
+              errors: misses,
+            },
           })
         } else {
           nextShowTimeoutRef.current = window.setTimeout(showNextHard, HARD_GAP_MS)
@@ -150,7 +160,12 @@ function ReflexGame() {
         endGame({
           perfection,
           timeMs: totalTime,
-          score: Math.round(perfection * 10)
+          score: Math.round(perfection * 10),
+          difficulty,
+          extra: {
+            avgReactionTimeMs: avgRt,
+            errors: missCount,
+          },
         })
       }
       return next

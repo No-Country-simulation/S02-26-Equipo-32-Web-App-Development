@@ -273,11 +273,18 @@ function LinePrecisionGame() {
             : 0
         const perf = Math.max(0, 100 - (avgDev / TOL) * 25)
         setPerfection(Math.round(perf))
+        const routeAdherence = Math.min(pathProgress.current, 1) * 100
         
-        // Use context to end game
         endGame({
           perfection: perf,
           timeMs: Date.now() - startTime.current,
+          difficulty,
+          routeAdherence,
+          extra: {
+            avgDeviation: avgDev,
+            tolerance: TOL,
+            routeAdherence,
+          },
         })
       }
     }
