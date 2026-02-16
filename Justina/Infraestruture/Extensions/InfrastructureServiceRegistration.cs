@@ -33,21 +33,7 @@ namespace Infraestruture.Extensions
 
             services.AddScoped<DbSeeder>();
 
-            // Configuración JWT
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                {
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(
-                            Encoding.UTF8.GetBytes(configuration["AppSettings:Token"]!)
-                        ),
-                        ValidateIssuer = false,
-                        ValidateAudience = false
-                    };
-                });
-
+           
             return services;
         }
     }
