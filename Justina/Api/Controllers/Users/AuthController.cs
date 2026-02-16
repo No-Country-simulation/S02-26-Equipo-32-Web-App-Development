@@ -9,6 +9,7 @@ namespace Api.Controllers.Users
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Tags("Público - Autenticación")]  
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;

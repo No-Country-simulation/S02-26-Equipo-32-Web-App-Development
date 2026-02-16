@@ -18,5 +18,9 @@ namespace Domain.Models
      
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public ICollection<Attempt> Attempts { get; set; } = new List<Attempt>();
+
+        public bool DeletionRequested { get; set; }
+        public DateTime? DeletionRequestedAt { get; set; }
+        public DateTime? ScheduledDeletionDate { get; set; }
     }
 }

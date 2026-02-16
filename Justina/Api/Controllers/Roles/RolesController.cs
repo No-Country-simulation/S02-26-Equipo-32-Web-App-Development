@@ -8,6 +8,7 @@ namespace Api.Controllers.Roles
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(Roles = "Admin")]
+    [Tags("Admin - Roles")]  
     public class RolesController : ControllerBase
     {
         private readonly IRoleService _roleService;
@@ -22,9 +23,8 @@ namespace Api.Controllers.Roles
         {
             var result = await _roleService.GetAllRolesAsync();
 
-            // ✅ Usa IsSuccess (no Success)
             if (result.IsSuccess)
-                return Ok(result);  // ✅ El resultado ya tiene Value, no Data
+                return Ok(result);
 
             return BadRequest(result);
         }
@@ -49,7 +49,7 @@ namespace Api.Controllers.Roles
             var result = await _roleService.CreateRoleAsync(createDto);
 
             if (result.IsSuccess)
-                return Ok(result);
+                return StatusCode(201, result);  // 👈 201 Created
 
             return BadRequest(result);
         }

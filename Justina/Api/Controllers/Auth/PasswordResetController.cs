@@ -8,6 +8,7 @@ namespace Api.Controllers.Auth
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Tags("Público - Recuperación")]
     public class PasswordResetController : ControllerBase
     {
         private readonly PasswordResetService _passwordResetService;

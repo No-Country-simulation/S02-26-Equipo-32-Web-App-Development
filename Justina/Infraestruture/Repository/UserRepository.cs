@@ -34,5 +34,27 @@ namespace Infraestruture.Repository
                     .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Email == email);
         }
+
+        public async Task<IEnumerable<User>> GetAllWithRolesAsync()
+        {
+            return await _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<User>> GetDeletionRequestsAsync()
+        {
+            return await _context.Users
+                .Where(u => u.DeletionRequested && u.ScheduledDeletionDate > DateTime.UtcNow)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<User>> GetUsersMarkedForDeletionAsync(DateTime currentDate)
+        {
+            return await _context.Users
+                .Where(u => u.DeletionRequested && u.ScheduledDeletionDate <= currentDate)
+                .ToListAsync();
+        }
     }
 }

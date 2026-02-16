@@ -12,6 +12,11 @@ namespace Application.Interface.Repository
     {
         Task<User?> GetByEmailAsync(string email); //devuelve usuario o nulo.
         Task<User?> GetByIdWithRolesAsync(int id);  
-        Task<User?> GetByEmailWithRolesAsync(string email); 
+        Task<User?> GetByEmailWithRolesAsync(string email);
+
+        Task<IEnumerable<User>> GetAllWithRolesAsync();
+
+        Task<IEnumerable<User>> GetDeletionRequestsAsync();
+        Task<IEnumerable<User>> GetUsersMarkedForDeletionAsync(DateTime currentDate);
     }
 }
