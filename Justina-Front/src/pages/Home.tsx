@@ -1,12 +1,27 @@
 import { Link } from 'react-router-dom'
 import { GAMES } from '../games'
 import { Home as HomeIcon, BarChart2, ChevronRight, PlayCircle } from 'lucide-react'
-
+import { isAdmin,getCurrentUser } from '../store'; 
+import AdminOverview from '../components/AdminOverview'
 export default function Home() {
+  const user = getCurrentUser();
+  const adminMode = isAdmin(); // True si es admin
 
+  // --- LÓGICA PRINCIPAL ---
+  // Si es Admin, retornamos directamente el Panel de Admin
+  // Esto mantiene el Layout y la Sidebar, solo cambia el centro.
+  if (adminMode) {
+    return <AdminOverview />;
+  }
   return (
     <div style={{ display: 'flex', gap: '2rem' }}>
       {/* Left Dashboard Sidebar */}
+      {isAdmin() && (
+         <div style={{ background: '#333', color: 'white', padding: '10px', textAlign: 'center', marginBottom: '20px' }}>
+           <span>🔒 Modo Administrador activo &nbsp;</span>
+           <Link to="/admin" style={{ color: '#4da6ff', fontWeight: 'bold' }}>Ir al Panel de Control &rarr;</Link>
+         </div>
+       )}
       <div style={{ 
         width: '240px', 
         flexShrink: 0,

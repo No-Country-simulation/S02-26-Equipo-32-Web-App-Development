@@ -16,6 +16,7 @@ const TEST_NAME_BY_GAME: Record<GameId, string> = {
 type CurrentUser = {
   id: number
   email?: string
+  role?: string | string[] // Rol de usuario
 }
 
 function load(): GameResult[] {
@@ -39,6 +40,20 @@ export function getCurrentUser(): CurrentUser | null {
     return null
   }
 }
+// FUNCION PARA VERIFICAR SI EL USUARIO ES ADMIN
+export function isAdmin(): boolean {
+  const user = getCurrentUser();
+  if (!user?.role) return false;
+
+  // Si es un Array (ej: ["Admin", "Cirujano"]), buscamos si incluye "Admin"
+  if (Array.isArray(user.role)) {
+    return user.role.includes('Admin');
+  }
+  
+  // Si es un string simple (ej: "Admin"), comparamos directo
+  return user.role === 'Admin';
+}
+
 
 export function setCurrentUser(user: CurrentUser | null) {
   if (!user) {

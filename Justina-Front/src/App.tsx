@@ -9,13 +9,14 @@ import Reflex from './pages/Reflex'
 import TumorAblation from './pages/TumorAblation'
 import Suture from './pages/Suture'
 import SteadyHand from './pages/SteadyHand'
-
+import AdminDashboard from './pages/AdminDashboard' //nueva ruta de admin
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       
+      <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/" element={<Layout><Home /></Layout>} />
       <Route path="/results" element={<Layout><Results /></Layout>} />
       

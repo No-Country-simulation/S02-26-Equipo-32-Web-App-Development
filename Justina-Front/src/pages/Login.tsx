@@ -65,6 +65,9 @@ export default function Login() {
       let payload: any
       try {
         payload = parseJwtPayload(token)
+
+        //QUE TRAE EL TOKEN 
+        console.log("Contenido del Token:", payload);
       } catch {
         setError('Respuesta de login inválida.')
         setLoading(false)
@@ -77,6 +80,11 @@ export default function Login() {
       const emailClaim =
         payload['email'] ??
         payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress']
+      
+      const roleClaim = 
+        payload['role'] ?? 
+        payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? 
+        'user'; // Si no encuentra nada, asumimos que es un usuario normal
 
       const userId = Number(idClaim)
       if (!userId || Number.isNaN(userId)) {
@@ -85,7 +93,7 @@ export default function Login() {
         return
       }
 
-      setCurrentUser({ id: userId, email: emailClaim })
+      setCurrentUser({ id: userId, email: emailClaim, role: roleClaim })
       navigate('/')
     } catch {
       setError('No se pudo conectar con el servidor.')
