@@ -10,13 +10,11 @@ namespace Infraestruture.Persistence.Context
 {
     public class JustinaDbContext : DbContext
     {
-        // El constructor recibe las opciones (como la cadena de conexión) desde el Program.cs
         public JustinaDbContext(DbContextOptions<JustinaDbContext> options)
             : base(options)
         {
         }
 
-        // Definición de las tablas (DbSets)
         public DbSet<Role> Roles { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
@@ -29,9 +27,6 @@ namespace Infraestruture.Persistence.Context
         {
             base.OnModelCreating(modelBuilder);
 
-            // Esta línea es la más importante: 
-            // Busca automáticamente todas las clases de configuración (Fluent API) 
-            // que creamos en la carpeta "Configurations" y las aplica.
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(JustinaDbContext).Assembly);
         }
     }

@@ -1,16 +1,12 @@
-﻿using Application.Interface.Repository;
-using Domain.Models;
+﻿﻿using Domain.Models;
 using Infraestruture.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Infraestruture.Repository
 {
-    public class AttemptRepository : IAttemptRepository
+    public class AttemptRepository : Application.Interface.Repository.IAttemptRepository
     {
         private readonly JustinaDbContext _context;
 

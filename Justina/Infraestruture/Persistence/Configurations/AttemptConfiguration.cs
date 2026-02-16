@@ -1,4 +1,4 @@
-﻿using Domain.Models;
+using Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -16,6 +16,8 @@ namespace Infraestruture.Persistence.Configurations
             builder.ToTable("Attempts");
             builder.HasKey(a => a.Id);
 
+            builder.Property(a => a.GameKey).HasMaxLength(50).IsRequired();
+            builder.Property(a => a.GameDifficulty).HasMaxLength(20).IsRequired();
             builder.Property(a => a.TrajectoryScore).HasPrecision(5, 2);
             builder.Property(a => a.PrecisionScore).HasPrecision(5, 2);
             builder.Property(a => a.SmoothnessScore).HasPrecision(5, 2);

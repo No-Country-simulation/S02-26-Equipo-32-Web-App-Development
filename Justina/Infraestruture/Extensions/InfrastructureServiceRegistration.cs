@@ -1,4 +1,4 @@
-﻿using Application.Interface.Repository;
+using Application.Interface.Repository;
 using Application.Interface.UnitOfWor;
 using Infraestruture.Persistence.Context;
 using Infraestruture.Repository;
@@ -30,7 +30,7 @@ namespace Infraestruture.Extensions
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IUserRoleRepository, UserRoleRepository>();
-            services.AddScoped<IAttemptRepository, AttemptRepository>();
+            services.AddScoped<Application.Interface.Repository.IAttemptRepository, AttemptRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<DbSeeder>();
 
