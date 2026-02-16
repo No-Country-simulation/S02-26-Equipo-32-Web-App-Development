@@ -18,42 +18,43 @@ namespace Api.Controllers.Users
         }
 
         // POST: api/Auth/register
-        // POST: api/Auth/register
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
         {
-            try
-            {
-                int userId = await _authService.RegisterAsync(dto);
+            var result = await _authService.RegisterAsync(dto);
 
-                // ✅ Sin dependency de UsersController
+            if (result.StatusCode == 201)
+            {
                 return Created(
-                    $"api/Users/{userId}",  // URL manual
+                    $"api/Users/{result.Data}",
                     new
                     {
-                        Message = "Usuario registrado con éxito",
-                        UserId = userId
+                        Message = result.Message,
+                        UserId = result.Data
                     }
                 );
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Error = ex.Message });
-            }
+
+            return BadRequest(result);
         }
+
         // POST: api/Auth/login
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginUserDto dto)
         {
-            try
+            var result = await _authService.LoginAsync(dto);
+
+            if (result.StatusCode == 200)
             {
-                string token = await _authService.LoginAsync(dto);
-                return Ok(token);
+                return Ok(new
+                {
+                    Token = result.Data?.Token,
+                    Message = result.Message,
+                    Roles = result.Data?.Roles
+                });
             }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+
+            return Unauthorized(result);
         }
 
         //POST: api/Auth/change-password
@@ -65,15 +66,12 @@ namespace Api.Controllers.Users
             if (string.IsNullOrEmpty(userEmail))
                 return Unauthorized(new { Error = "No se pudo identificar al usuario desde el Token" });
 
-            try
-            {
-                await _authService.ChangePasswordAsync(dto, userEmail);
-                return Ok(new { Message = "Contraseña cambiada con éxito" });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Error = ex.Message });
-            }
+            var result = await _authService.ChangePasswordAsync(dto, userEmail);
+
+            if (result.StatusCode == 200)
+                return Ok(result);
+
+            return BadRequest(result);
         }
     }
 }

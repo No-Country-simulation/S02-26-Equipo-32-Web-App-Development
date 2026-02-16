@@ -1,6 +1,6 @@
 ﻿
 using Application.Interface.Service;
-
+using Application.Mapping.Roles;
 using Application.Service.Attempts;
 using Application.Service.Roles;
 using Application.Service.Users;
@@ -26,8 +26,10 @@ namespace Application.Extensions
             // Registro de Servicios de Aplicación
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IAttemptService, AttemptService>();
+
+            // Application/Extensions/ApplicationRegistration.cs
+            services.AddAutoMapper(typeof(RoleProfile).Assembly);
             
-         
 
 
             return services;
