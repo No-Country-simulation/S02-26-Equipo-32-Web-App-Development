@@ -4,7 +4,8 @@ import { API_BASE_URL } from '../store'
 
 export default function Register() {
   const navigate = useNavigate()
-  const [fullName, setFullName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -14,6 +15,11 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    if (!firstName.trim() || !lastName.trim()) {
+      setError('Nombre y apellido son obligatorios.')
+      return
+    }
 
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden.')
@@ -29,14 +35,28 @@ export default function Register() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          fullName,
+          firstName,
+          lastName,
           email,
           password,
         }),
       })
 
       if (!response.ok) {
-        setError('No se pudo crear la cuenta.')
+        let message = 'No se pudo crear la cuenta.'
+        try {
+          const body = (await response.json()) as any
+          const backendMessage =
+            body?.error ??
+            body?.Error ??
+            body?.message ??
+            body?.Message
+          if (backendMessage && typeof backendMessage === 'string') {
+            message = backendMessage
+          }
+        } catch {
+        }
+        setError(message)
         setLoading(false)
         return
       }
@@ -79,13 +99,24 @@ export default function Register() {
           
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
-              <label htmlFor="fullname">Nombre completo</label>
+              <label htmlFor="firstname">Nombre</label>
               <input
                 type="text"
-                id="fullname"
-                placeholder="Ingresa tu nombre completo"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                id="firstname"
+                placeholder="Ingresa tu nombre"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="lastname">Apellido</label>
+              <input
+                type="text"
+                id="lastname"
+                placeholder="Ingresa tu apellido"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
               />
             </div>
 

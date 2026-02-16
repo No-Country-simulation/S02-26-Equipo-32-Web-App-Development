@@ -2,11 +2,11 @@ using System;
 
 namespace Api.Models.Attempts
 {
-    // DTO de salida para devolver información de un intento a los clientes.
-    // Usamos un modelo plano pensado para lectura, evitando exponer navegaciones complejas.
     public class AttemptDto
     {
         public int Id { get; set; }
+        public string GameKey { get; set; } = null!;
+        public string GameDifficulty { get; set; } = null!;
         public int UserId { get; set; }
         public int TestId { get; set; }
         public int Duration { get; set; }
@@ -18,4 +18,3 @@ namespace Api.Models.Attempts
         public string CompletionStatus { get; set; } = null!;
     }
 }
-

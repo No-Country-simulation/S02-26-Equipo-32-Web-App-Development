@@ -1,11 +1,8 @@
 import { Link } from 'react-router-dom'
 import { GAMES } from '../games'
-import { Home as HomeIcon, BarChart2, ChevronRight, PlayCircle, Lock, Trophy } from 'lucide-react'
-import { useProgressStore, canPlayGame, RANK_ORDER } from '../progressStore'
-import type { UserRank } from '../types'
+import { Home as HomeIcon, BarChart2, ChevronRight, PlayCircle } from 'lucide-react'
 
 export default function Home() {
-  const { rank, setRank, careerModeEnabled, setCareerMode } = useProgressStore()
 
   return (
     <div style={{ display: 'flex', gap: '2rem' }}>
@@ -54,47 +51,6 @@ export default function Home() {
               Resultados
             </Link>
           </nav>
-
-          {/* Admin / Career Mode Controls */}
-          <div style={{ 
-            marginTop: 'auto', 
-            paddingTop: '1rem', 
-            borderTop: '1px solid rgba(255,255,255,0.1)' 
-          }}>
-            <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '0.5rem' }}>Administración</h4>
-            
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', marginBottom: '1rem', cursor: 'pointer' }}>
-              <input 
-                type="checkbox" 
-                checked={careerModeEnabled} 
-                onChange={(e) => setCareerMode(e.target.checked)}
-                style={{ accentColor: 'var(--accent)' }}
-              />
-              Modo Carrera
-            </label>
-
-            {careerModeEnabled && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)' }}>Simular Rango:</div>
-                <select 
-                  value={rank} 
-                  onChange={(e) => setRank(e.target.value as UserRank)}
-                  style={{ 
-                    background: 'rgba(0,0,0,0.3)', 
-                    color: 'white', 
-                    border: '1px solid rgba(255,255,255,0.2)', 
-                    padding: '0.25rem',
-                    borderRadius: '4px',
-                    fontSize: '0.8rem'
-                  }}
-                >
-                  {RANK_ORDER.map(r => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
@@ -102,23 +58,6 @@ export default function Home() {
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0, color: 'var(--text)' }}>Escenarios de Entrenamiento</h2>
-          {careerModeEnabled && (
-            <div style={{ 
-              background: 'var(--bg-card)', 
-              padding: '0.5rem 1rem', 
-              borderRadius: '20px', 
-              border: '1px solid var(--accent)',
-              color: 'var(--accent)',
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>
-              <Trophy size={16} />
-              Rango Actual: {rank}
-            </div>
-          )}
         </div>
 
         <div
@@ -186,15 +125,17 @@ export default function Home() {
         </div>
 
         {/* Scenarios Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
-          {GAMES.map((g, index) => {
-            const isLocked = careerModeEnabled && !canPlayGame(g.requiredRank, rank)
-            
-            return (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+            gap: '1.5rem',
+          }}
+        >
+          {GAMES.map((g, index) => (
             <Link
               key={g.id}
-              to={isLocked ? '#' : g.path}
-              onClick={(e) => isLocked && e.preventDefault()}
+              to={g.path}
               style={{
                 display: 'block',
                 background: 'var(--bg-card)',
@@ -204,61 +145,105 @@ export default function Home() {
                 textDecoration: 'none',
                 color: 'inherit',
                 transition: 'transform 0.2s, box-shadow 0.2s',
-                opacity: isLocked ? 0.6 : 1,
-                cursor: isLocked ? 'not-allowed' : 'pointer',
-                filter: isLocked ? 'grayscale(1)' : 'none'
+                cursor: 'pointer',
               }}
               onMouseEnter={(e) => {
-                if (!isLocked) {
-                  e.currentTarget.style.transform = 'translateY(-4px)'
-                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                }
+                e.currentTarget.style.transform = 'translateY(-4px)'
+                e.currentTarget.style.boxShadow =
+                  '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
               }}
               onMouseLeave={(e) => {
-                if (!isLocked) {
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = 'none'
-                }
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = 'none'
               }}
             >
-              {/* Thumbnail Placeholder */}
-              <div style={{ 
-                height: '140px', 
-                background: g.image ? `url(${g.image}) center/cover no-repeat` : `linear-gradient(135deg, ${['#fca5a5', '#fcd34d', '#86efac', '#93c5fd', '#c4b5fd'][index % 5]} 0%, #e2e8f0 100%)`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative'
-              }}>
-                {g.image && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.2)' }} />}
-                {isLocked ? (
-                  <Lock size={40} color="white" style={{ opacity: 0.9, zIndex: 1, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
-                ) : (
-                  <PlayCircle size={40} color="white" style={{ opacity: 0.9, zIndex: 1, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+              <div
+                style={{
+                  height: '140px',
+                  background: g.image
+                    ? `url(${g.image}) center/cover no-repeat`
+                    : `linear-gradient(135deg, ${
+                        ['#fca5a5', '#fcd34d', '#86efac', '#93c5fd', '#c4b5fd'][index % 5]
+                      } 0%, #e2e8f0 100%)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                }}
+              >
+                {g.image && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'rgba(0,0,0,0.2)',
+                    }}
+                  />
                 )}
+                <PlayCircle
+                  size={40}
+                  color="white"
+                  style={{
+                    opacity: 0.9,
+                    zIndex: 1,
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+                  }}
+                />
               </div>
-              
+
               <div style={{ padding: '1rem' }}>
-                <h3 style={{ margin: '0 0 0.25rem', fontWeight: 600, fontSize: '1.1rem' }}>{g.title}</h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    {careerModeEnabled && g.requiredRank ? `Req: ${g.requiredRank}` : 'Difficulty:'}
+                <h3
+                  style={{
+                    margin: '0 0 0.25rem',
+                    fontWeight: 600,
+                    fontSize: '1.1rem',
+                  }}
+                >
+                  {g.title}
+                </h3>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    marginBottom: '0.5rem',
+                  }}
+                >
+                  <span
+                    style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}
+                  >
+                    Difficulty:
                   </span>
-                  {!careerModeEnabled && (
-                    <div style={{ display: 'flex', color: 'var(--text)' }}>
-                      {'★'.repeat(3 + (index % 3))}{'☆'.repeat(2 - (index % 3))}
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', color: 'var(--text)' }}>
+                    {'★'.repeat(3 + (index % 3))}
+                    {'☆'.repeat(2 - (index % 3))}
+                  </div>
                 </div>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: '0.85rem',
+                    color: 'var(--text-muted)',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                >
                   {g.description}
                 </p>
-                <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                <div
+                  style={{
+                    marginTop: '0.75rem',
+                    fontSize: '0.8rem',
+                    color: 'var(--text-muted)',
+                  }}
+                >
                   Mejor Personal: -
                 </div>
               </div>
             </Link>
-          )})}
+          ))}
         </div>
       </div>
     </div>

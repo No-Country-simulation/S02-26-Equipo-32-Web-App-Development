@@ -1,4 +1,4 @@
-using Domain.Models;
+﻿﻿using Domain.Models;
 using Infraestruture.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
@@ -6,39 +6,38 @@ using System.Threading.Tasks;
 
 namespace Infraestruture.Repository
 {
-    // Implementación concreta del repositorio de Attempts basada en Entity Framework Core.
-    // Esta clase se encarga exclusivamente de hablar con la base de datos y no contiene lógica
-    // de negocio; así mantenemos una separación clara de responsabilidades.
-    public class AttemptRepository : IAttemptRepository
+    public class AttemptRepository : Application.Interface.Repository.IAttemptRepository
     {
         private readonly JustinaDbContext _context;
 
-        // Inyectamos el DbContext para aprovechar el contenedor de dependencias configurado en Program.cs
-        // y poder reutilizar la misma conexión por request HTTP.
         public AttemptRepository(JustinaDbContext context)
         {
             _context = context;
         }
 
-        // Inserta un nuevo Attempt en la base de datos y garantiza que los cambios se persisten
-        // mediante SaveChangesAsync. Devolvemos la entidad para que capas superiores puedan usar
-        // el Id y cualquier valor calculado por EF.
-        public async Task<Attempt> AddAsync(Attempt attempt)
+        public async Task<IEnumerable<Attempt>> GetAllAsync()
         {
-            _context.Attempts.Add(attempt);
-            await _context.SaveChangesAsync();
-            return attempt;
+            return await _context.Attempts.AsNoTracking().ToListAsync();
         }
 
-        // Recupera todos los intentos asociados a un Test concreto para poder calcular estadísticas
-        // de desempeño por juego (test) sin exponer directamente consultas LINQ fuera del repositorio.
-        public async Task<List<Attempt>> GetByTestAsync(int testId)
+        public async Task<Attempt?> GetByIdAsync(int id)
         {
-            return await _context.Attempts
-                .AsNoTracking()
-                .Where(a => a.TestId == testId)
-                .ToListAsync();
+            return await _context.Attempts.FindAsync(id);
+        }
+
+        public async Task AddAsync(Attempt attempt)
+        {
+            await _context.Attempts.AddAsync(attempt);
+        }
+
+        public void Update(Attempt attempt)
+        {
+            _context.Attempts.Update(attempt);
+        }
+
+        public void Delete(Attempt attempt)
+        {
+            _context.Attempts.Remove(attempt);
         }
     }
 }
-

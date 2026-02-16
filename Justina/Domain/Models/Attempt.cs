@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +9,8 @@ namespace Domain.Models
     public class Attempt
     {
         public int Id { get; set; }
+        public string GameKey { get; set; } = null!;
+        public string GameDifficulty { get; set; } = null!;
         public int UserId { get; set; }
         public User User { get; set; } = null!;
         public int TestId { get; set; }

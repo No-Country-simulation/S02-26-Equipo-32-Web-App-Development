@@ -2,6 +2,17 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { API_BASE_URL, setCurrentUser } from '../store'
 
+function parseJwtPayload(token: string): any {
+  const parts = token.split('.')
+  if (parts.length !== 3) {
+    throw new Error('Invalid token')
+  }
+  const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+  const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=')
+  const json = atob(padded)
+  return JSON.parse(json)
+}
+
 export default function Login() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -24,19 +35,57 @@ export default function Login() {
       })
 
       if (!response.ok) {
-        setError('Credenciales inválidas o error al iniciar sesión.')
+        let message = 'Credenciales inválidas o error al iniciar sesión.'
+        try {
+          const text = await response.text()
+          if (text) {
+            if (text.trim().startsWith('{')) {
+              const body = JSON.parse(text) as any
+              const backendMessage =
+                body?.error ??
+                body?.Error ??
+                body?.message ??
+                body?.Message
+              if (backendMessage && typeof backendMessage === 'string') {
+                message = backendMessage
+              }
+            } else {
+              message = text
+            }
+          }
+        } catch {
+        }
+        setError(message)
         setLoading(false)
         return
       }
 
-      const data = (await response.json()) as { id: number; email?: string }
-      if (!data.id) {
+      const token = await response.text()
+
+      let payload: any
+      try {
+        payload = parseJwtPayload(token)
+      } catch {
         setError('Respuesta de login inválida.')
         setLoading(false)
         return
       }
 
-      setCurrentUser({ id: data.id, email: data.email })
+      const idClaim =
+        payload['nameid'] ??
+        payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']
+      const emailClaim =
+        payload['email'] ??
+        payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress']
+
+      const userId = Number(idClaim)
+      if (!userId || Number.isNaN(userId)) {
+        setError('Respuesta de login inválida.')
+        setLoading(false)
+        return
+      }
+
+      setCurrentUser({ id: userId, email: emailClaim })
       navigate('/')
     } catch {
       setError('No se pudo conectar con el servidor.')

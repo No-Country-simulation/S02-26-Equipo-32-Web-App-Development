@@ -76,6 +76,8 @@ async function postAttemptToBackend(result: GameResult) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        gameKey: result.gameId,
+        gameDifficulty: result.difficulty ?? 'medium',
         userId: user.id,
         testId,
         duration: result.timeMs,
