@@ -1,4 +1,4 @@
-﻿using Application.Dtos.Common;          // 👈 NUEVO
+﻿using Application.Dtos.Common;
 using Application.Dtos.Users;
 using Application.Interface.Repository;
 using Application.Interface.Service;
@@ -10,7 +10,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using BCrypt.Net;
 
 namespace Application.Service.Users
 {
@@ -62,7 +61,6 @@ namespace Application.Service.Users
                     UserRoles = new List<UserRole>()
                 };
 
-                // Asignar rol por defecto según lo que eligió el usuario
                 var defaultRole = await _roleRepository.GetByNameAsync("User");
                 if (defaultRole != null)
                 {
@@ -98,9 +96,10 @@ namespace Application.Service.Users
                 if (!passwordValid)
                     return ApiResponse<LoginResponseDto>.Error(401, "Credenciales inválidas");
 
-                // Obtener roles del usuario
                 var userWithRoles = await _userRepository.GetByIdWithRolesAsync(user.Id);
-                var roles = userWithRoles?.UserRoles.Select(ur => ur.Role.Name).ToList() ?? new List<string>();
+                var roles = userWithRoles?.UserRoles
+                    .Select(ur => ur.Role.Name)
+                    .ToList() ?? new List<string>();
 
                 var claims = new List<Claim>
                 {
@@ -181,6 +180,7 @@ namespace Application.Service.Users
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
+
             return tokenHandler.WriteToken(token);
         }
     }

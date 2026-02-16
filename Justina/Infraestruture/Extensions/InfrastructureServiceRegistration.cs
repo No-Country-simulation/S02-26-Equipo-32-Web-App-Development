@@ -1,4 +1,4 @@
-﻿using Application.Interface.Repository;
+using Application.Interface.Repository;
 using Application.Interface.UnitOfWork;
 using Infraestruture.Persistence.Context;
 using Infraestruture.Repository;
@@ -6,6 +6,10 @@ using Infraestruture.UnitOfWorks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Infraestruture.Persistence.Seeds;
 
 namespace Infraestruture.Extensions
 {
@@ -13,20 +17,36 @@ namespace Infraestruture.Extensions
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
-            // Registro de DbContext
             services.AddDbContext<JustinaDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-            // Registro de Repositorios Genéricos
+            // Repositorio genérico
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
-            // Registro de Repositorios Específicos
+            // Repositorios específicos
             services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IRoleRepository, RoleRepository>();      // 👈 AGREGADO
+            services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IAttemptRepository, AttemptRepository>();
 
-            // Registro de UnitOfWork
+            // Unit of Work
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            services.AddScoped<DbSeeder>();
+
+            // Configuración JWT
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(configuration["AppSettings:Token"]!)
+                        ),
+                        ValidateIssuer = false,
+                        ValidateAudience = false
+                    };
+                });
 
             return services;
         }

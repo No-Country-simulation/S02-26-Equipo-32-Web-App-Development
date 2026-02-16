@@ -15,28 +15,46 @@ namespace Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Capas de la aplicación
-            builder.Services.AddInfrastructureServices(builder.Configuration);
-            builder.Services.AddApplicationLayer();
-
-            // Autenticación JWT
-            ConfigureAuthentication(builder);
-
-            // Swagger con JWT
-            ConfigureSwagger(builder);
+            // -------------------------
+            // SERVICES
+            // -------------------------
 
             builder.Services.AddControllers();
 
-            var app = builder.Build();
+            // CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("FrontendPolicy", policy =>
+                {
+                    policy.WithOrigins("http://localhost:5173")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
+            });
 
-            // MANEJADOR GLOBAL DE ERRORES HTTP (401, 403, 404, 500)
-            ConfigureErrorHandler(app);
+            // Autenticación
+            ConfigureAuthentication(builder);
+
+            // Swagger
+            ConfigureSwagger(builder);
+
+            var app = builder.Build();
 
             // Inicializar base de datos (Seeder)
             await InitializeDatabase(app);
 
-            // Pipeline HTTP
+
+            // -------------------------
+            // PIPELINE
+            // -------------------------
+
+            ConfigureErrorHandler(app);
+
+            app.UseCors("FrontendPolicy");
+
             ConfigurePipeline(app);
+
+            await InitializeDatabase(app);
 
             app.Run();
         }
@@ -48,7 +66,6 @@ namespace Api
                 var response = context.HttpContext.Response;
                 var statusCode = response.StatusCode;
 
-                // Solo manejar códigos de error específicos
                 if (statusCode == 401 || statusCode == 403 || statusCode == 404 || statusCode == 500)
                 {
                     response.ContentType = "application/json";
@@ -64,7 +81,6 @@ namespace Api
                 }
             });
 
-            // Manejo de excepciones no controladas (500)
             app.UseExceptionHandler(errorApp =>
             {
                 errorApp.Run(async context =>
@@ -118,7 +134,6 @@ namespace Api
                         ClockSkew = TimeSpan.Zero
                     };
 
-                    // Mensajes personalizados para 401
                     options.Events = new JwtBearerEvents
                     {
                         OnChallenge = context =>
