@@ -1,5 +1,8 @@
 ﻿using Application.Extensions;
+using Application.Interface.Service;
+using Application.Service.Auth;
 using Infraestruture.Extensions;
+using Infraestruture.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
@@ -22,6 +25,9 @@ namespace Api
             // -------------------------
             // SERVICES
             // -------------------------
+
+            builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<PasswordResetService>();  // 
 
             builder.Services.AddControllers();
 

@@ -1,4 +1,5 @@
 ﻿using Domain.Models;
+using Infraestruture.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -23,9 +24,15 @@ namespace Infraestruture.Persistence.Context
         public DbSet<Attempt> Attempts { get; set; }
         public DbSet<Feedback> Feedbacks { get; set; }
 
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+
+            // Tus configuraciones existentes...
+            modelBuilder.ApplyConfiguration(new PasswordResetTokenConfiguration());
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(JustinaDbContext).Assembly);
         }

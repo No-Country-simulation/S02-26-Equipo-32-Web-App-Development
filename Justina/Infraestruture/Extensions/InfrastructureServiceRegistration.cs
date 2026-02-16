@@ -28,6 +28,8 @@ namespace Infraestruture.Extensions
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IAttemptRepository, AttemptRepository>();
 
+            services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+
             // Unit of Work
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
