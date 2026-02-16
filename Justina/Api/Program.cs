@@ -1,4 +1,4 @@
-using Application.Extensions;
+ï»¿using Application.Extensions;
 using Infraestruture.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
@@ -15,13 +15,17 @@ namespace Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // âœ… 1. REGISTRAR CAPAS (DbContext, Repositorios, Servicios)
+            builder.Services.AddInfrastructureServices(builder.Configuration);
+            builder.Services.AddApplicationLayer();
+
             // -------------------------
             // SERVICES
             // -------------------------
 
             builder.Services.AddControllers();
 
-            // CORS
+            // CORS para frontend
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("FrontendPolicy", policy =>
@@ -32,10 +36,10 @@ namespace Api
                 });
             });
 
-            // Autenticación
+            // AutenticaciÃ³n JWT
             ConfigureAuthentication(builder);
 
-            // Swagger
+            // Swagger con JWT
             ConfigureSwagger(builder);
 
             var app = builder.Build();
@@ -43,18 +47,18 @@ namespace Api
             // Inicializar base de datos (Seeder)
             await InitializeDatabase(app);
 
-
             // -------------------------
-            // PIPELINE
+            // PIPELINE HTTP
             // -------------------------
 
+            // Manejador de errores HTTP (401, 403, 404, 500)
             ConfigureErrorHandler(app);
 
+            // CORS
             app.UseCors("FrontendPolicy");
 
+            // Pipeline principal
             ConfigurePipeline(app);
-
-            await InitializeDatabase(app);
 
             app.Run();
         }
@@ -94,7 +98,7 @@ namespace Api
                     var errorResponse = new
                     {
                         StatusCode = 500,
-                        Message = "Error interno del servidor. Por favor, intente más tarde.",
+                        Message = "Error interno del servidor. Por favor, intente mÃ¡s tarde.",
                         Detail = app.Environment.IsDevelopment() ? exception?.Message : null,
                         Timestamp = DateTime.UtcNow
                     };
@@ -108,7 +112,7 @@ namespace Api
         {
             return statusCode switch
             {
-                401 => "No autorizado. Token no proporcionado o inválido.",
+                401 => "No autorizado. Token no proporcionado o invÃ¡lido.",
                 403 => "Acceso denegado. No tiene permisos para este recurso.",
                 404 => "Recurso no encontrado.",
                 500 => "Error interno del servidor.",
@@ -145,7 +149,7 @@ namespace Api
                             var errorResponse = new
                             {
                                 StatusCode = 401,
-                                Message = "No autorizado. Token inválido o expirado.",
+                                Message = "No autorizado. Token invÃ¡lido o expirado.",
                                 Timestamp = DateTime.UtcNow
                             };
 
@@ -178,7 +182,7 @@ namespace Api
                 {
                     Title = "Justina API",
                     Version = "v1",
-                    Description = "API para simulación quirúrgica Justina",
+                    Description = "API para simulaciÃ³n quirÃºrgica Justina",
                     Contact = new OpenApiContact
                     {
                         Name = "Equipo Justina",
