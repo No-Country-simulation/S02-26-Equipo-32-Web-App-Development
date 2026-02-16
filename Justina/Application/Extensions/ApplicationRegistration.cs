@@ -1,7 +1,8 @@
 ﻿
 using Application.Interface.Service;
-
+using Application.Interface.Service.Tests;
 using Application.Service.Attempts;
+using Application.Service.Tests;
 using Application.Service.Users;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -24,7 +25,8 @@ namespace Application.Extensions
             // Registro de Servicios de Aplicación
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IAttemptService, AttemptService>();
-           
+            services.AddScoped<ITestService, TestService>();
+
 
             return services;
         }
