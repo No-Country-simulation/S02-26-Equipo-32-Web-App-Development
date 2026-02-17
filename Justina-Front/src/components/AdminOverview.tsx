@@ -55,7 +55,7 @@ export default function AdminOverview() {
             </p>
           </div>
           <button 
-            onClick={() => alert("Aquí irías a la página de usuarios")} // CAMBIAR LUEGO por navigate('/admin/users')
+            onClick={() => navigate('/admin/users')} // CAMBIAR LUEGO por navigate('/admin/users')
             style={{ marginTop: '1rem', background: 'white', border: '1px solid #e5e7eb', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', color: '#374151' }}>
             Ver Usuarios &rarr;
           </button>
