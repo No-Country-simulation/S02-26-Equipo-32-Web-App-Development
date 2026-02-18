@@ -1,4 +1,4 @@
-﻿using Application.Dtos.Attempts;
+using Application.Dtos.Attempts;
 using AutoMapper;
 using Domain.Models;
 using System;
@@ -21,7 +21,7 @@ namespace Application.Mapping.Attempts
 
             // De CreateDto -> Entidad (Entrada)
             CreateMap<AttemptCreateDto, Attempt>()
-                .ForMember(dest => dest.Date, opt => opt.MapFrom(src => DateTime.UtcNow)) // Seteamos la fecha al crear
+                .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date ?? DateTime.UtcNow)) // Seteamos la fecha al crear
                 .ForMember(dest => dest.Feedbacks, opt => opt.Ignore()); // Ignoramos colecciones en la creación simple
 
             // De UpdateDto -> Entidad (Actualización)

@@ -123,8 +123,6 @@ namespace Infraestruture.Persistence.Seeds
             {
                 throw new Exception("Error seeding database: " + ex.Message);
             }
-
-
         }
     }
 }

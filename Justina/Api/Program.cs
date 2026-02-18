@@ -1,8 +1,3 @@
-
-using Application.Interface.Repository;
-using Infraestruture.Persistence.Context;
-using Infraestruture.Repository;
-using Microsoft.EntityFrameworkCore;
 using Infraestruture.Extensions;
 using Application.Extensions;
 using Api.Extensions;
@@ -14,34 +9,42 @@ namespace Api
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-           
-            // Inyectamos lo de cada capa
-            builder.Services.AddInfrastructureServices(builder.Configuration); // Viene de Infrastructure
+
+            builder.Services.AddInfrastructureServices(builder.Configuration);
             builder.Services.AddApplicationLayer();
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("FrontendPolicy", policy =>
+                {
+                    policy.WithOrigins("http://localhost:5173")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
+            });
 
             builder.Services.AddSwaggerConfiguration();
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
 
             await app.UseDbSeeder();
-            // Configure the HTTP request pipeline.
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            else
+            {
+                app.UseHttpsRedirection();
+            }
 
-            app.UseHttpsRedirection();
-
+            app.UseCors("FrontendPolicy");
             app.UseAuthentication();
-
             app.UseAuthorization();
-
-
             app.MapControllers();
 
             app.Run();

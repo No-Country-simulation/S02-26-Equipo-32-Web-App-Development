@@ -1,6 +1,8 @@
+
 ﻿using Application.Interface.Repository;
 using Application.Interface.Repository.Tests;
 using Application.Interface.Service.UsersRoles;
+
 using Application.Interface.UnitOfWor;
 using Application.Service.UsersRoles;
 using Infraestruture.Persistence.Context;
@@ -18,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Infraestruture.Repository;
 
 
 namespace Infraestruture.Extensions
@@ -34,9 +37,11 @@ namespace Infraestruture.Extensions
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IUserRoleRepository, UserRoleRepository>();
+
             services.AddScoped<ITestRepository, TestRepository>();
             services.AddScoped<IAttemptRepository, AttemptRepository>();
             services.AddScoped<IUserRoleRepository, UserRoleRepository>();
+
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<DbSeeder>();
 
