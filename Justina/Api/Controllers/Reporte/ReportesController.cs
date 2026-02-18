@@ -10,11 +10,11 @@ namespace Api.Controllers.Reporte
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ReposteController : ControllerBase
+    public class ReportesController : ControllerBase
     {
         private readonly IUserRoleService _userRoleService;
-        private readonly ILogger<ReposteController> _logger;
-        public ReposteController(IUserRoleService userRoleService,ILogger<ReposteController> logger)
+        private readonly ILogger<ReportesController> _logger;
+        public ReportesController(IUserRoleService userRoleService,ILogger<ReportesController> logger)
         {
             _userRoleService = userRoleService ?? throw new ArgumentNullException(nameof(userRoleService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

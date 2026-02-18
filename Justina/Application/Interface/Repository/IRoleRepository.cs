@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Application.Interface.Repository
 {
-   public interface IRoleRepository
+    public interface IRoleRepository
     {
         Task<Role?> GetByNameAsync(string name);
     }

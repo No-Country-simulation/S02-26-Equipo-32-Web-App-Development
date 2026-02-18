@@ -97,5 +97,10 @@ namespace Infraestruture.Repository.UsersRoles
 
             _context.Set<UserRole>().Remove(userRole);
         }
+
+        public async Task AddUserRoleAsync(UserRole userRole)
+        {
+            await _context.UserRoles.AddAsync(userRole);
+        }
     }
 }

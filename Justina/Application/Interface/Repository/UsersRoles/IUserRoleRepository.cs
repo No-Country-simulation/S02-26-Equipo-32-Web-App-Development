@@ -28,5 +28,6 @@ namespace Application.Interface.Repository.UsersRoles
         void Update(UserRole userRole);
 
         void Delete(UserRole userRole);
+        Task AddUserRoleAsync(UserRole userRole);
     }
 }
