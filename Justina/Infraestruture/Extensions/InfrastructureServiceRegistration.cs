@@ -1,10 +1,14 @@
+
 ﻿using Application.Interface.Repository;
 using Application.Interface.Repository.Tests;
+using Application.Interface.Repository.UsersRoles;
 using Application.Interface.UnitOfWor;
+
 using Infraestruture.Persistence.Context;
 using Infraestruture.Persistence.Seeds;
 using Infraestruture.Repository;
 using Infraestruture.Repository.Tests;
+using Infraestruture.Repository.UsersRoles;
 using Infraestruture.UnitOfWorks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +20,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+using IAttemptRepository = Application.Interface.Repository.IAttemptRepository;
 
 
 namespace Infraestruture.Extensions
@@ -31,9 +37,12 @@ namespace Infraestruture.Extensions
             // Registro de Repositorios
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
-            services.AddScoped<IUserRoleRepository, UserRoleRepository>();
+          
+
             services.AddScoped<ITestRepository, TestRepository>();
             services.AddScoped<IAttemptRepository, AttemptRepository>();
+            services.AddScoped<IUserRoleRepository, UserRoleRepository>();
+
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<DbSeeder>();
 

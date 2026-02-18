@@ -13,5 +13,7 @@ namespace Application.Interface.Repository
         Task<User?> GetByEmailAsync(string email); //devuelve usuario o nulo.
         Task AddAsync(User user);
         Task UpdateAsync(User user);
+       
+       
     }
 }

@@ -34,7 +34,7 @@ namespace Api.Controllers.Attempts
                 return BadRequest(result.Error);
             }
 
-            // Devolvemos 201 Created y el objeto resultante
+            // 201 Created y el objeto resultante
             return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
         }
 

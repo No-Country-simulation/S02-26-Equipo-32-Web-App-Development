@@ -1,9 +1,11 @@
 ﻿
 using Application.Interface.Service;
 using Application.Interface.Service.Tests;
+using Application.Interface.Service.UsersRoles;
 using Application.Service.Attempts;
 using Application.Service.Tests;
 using Application.Service.Users;
+using Application.Service.UsersRoles;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -26,7 +28,7 @@ namespace Application.Extensions
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IAttemptService, AttemptService>();
             services.AddScoped<ITestService, TestService>();
-
+            services.AddScoped<IUserRoleService, UserRoleService>();
 
             return services;
         }
